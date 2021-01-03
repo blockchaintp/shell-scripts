@@ -1,0 +1,134 @@
+#!/bin/bash
+
+# shellcheck disable=SC1090
+source "$(dirname "$0")/include.sh"
+
+#shellcheck disable=SC2034
+LOGFILE_DISABLE=true
+
+DEPTH=3
+CLIENT=
+
+function set_organization {
+  EXTRA="${1}"
+  ((DEPTH -= 1))
+}
+
+function set_client {
+  BASE="clients/${1}"
+  CLIENT="${1}"
+}
+
+addCliOptions
+options::add -o o -d "organization to scan" -a -f set_organization
+options::add -o b -d "base directory to scan" -a -e BASE
+options::add -o p -d "check for pull requests" -x GH_PR_CHECK
+options::add -o c -d "check repositories for a particular client" \
+  -a -f set_client
+
+options::parse "$@"
+
+BASE=${BASE:-""}
+if [ -n "${BASE}" ]; then
+  BASE="${BASE}/"
+fi
+
+INFO "Scanning $HOME/git/${BASE}${EXTRA} for repositories"
+max_repo_len=0
+max_branch_len=0
+for repo in $(find "$HOME/git/${BASE}${EXTRA}" -mindepth "${DEPTH}" -maxdepth "${DEPTH}" -name .git -exec dirname {} \; | sort); do
+  cd "$repo" || exit 1
+  replace_path="$HOME/git\/${BASE}"
+  base_name=${repo//$replace_path/}
+  orgname=$(dirname "$base_name")
+  branch_name=$(git symbolic-ref -q HEAD)
+  branch_name=${branch_name##refs/heads/}
+  branch_name=${branch_name:-HEAD}
+  dirty_version=$(git describe --tags 2>/dev/null)-dirty
+  version=$(git describe --dirty --tags 2>/dev/null)
+  long_version=$(git describe --long --tags 2>/dev/null)
+
+  len=${#base_name}
+  branch_len=${#branch_name}
+  max_repo_len=$((len > max_repo_len ? len : max_repo_len))
+  max_branch_len=$((branch_len > max_branch_len ? branch_len : max_branch_len))
+  status=$(git status --short | wc -l)
+  if [ "$status" = "0" ]; then
+    if git diff "remotes/origin/$branch_name" --quiet >/dev/null 2>&1; then
+      INFO "Examining $base_name: up to date"
+    else
+      INFO "Examining $base_name: pulling"
+      exec::hide git pull
+    fi
+  else
+    INFO "Examining $base_name: dirty"
+  fi
+  pr_count='.'
+  if command -v gh >/dev/null; then
+    if [ -z "$CLIENT" ]; then
+      if [ "$GH_PR_CHECK" = "true" ]; then
+        if [ "$orgname" = "blockchaintp" ] ||
+          [ "$orgname" = "catenasys" ] || [ "$orgname" = "scealiontach" ]; then
+          DEBUG "Checking pull requests for $base_name"
+          pr_count=$(gh pr list | grep -cv "no open")
+        fi
+      fi
+    elif [ "$CLIENT" = "TASE" ]; then
+      if [ "$GH_PR_CHECK" = "true" ]; then
+        DEBUG "Checking pull requests for $base_name"
+        pr_count=$(bb -c "$CLIENT" pr-count "$base_name")
+      fi
+    fi
+  fi
+  if [ -z "$version" ]; then
+    version=$(git rev-parse --short HEAD)
+    UNCOMMITTED="${UNCOMMITTED}$base_name:$pr_count:$branch_name:$version,"
+  elif [ "$version" = "$dirty_version" ]; then
+    UNCOMMITTED="${UNCOMMITTED}$base_name:$pr_count:$branch_name:$version,"
+  elif [ "$version" != "$long_version" ]; then
+    RELEASABLE="${RELEASABLE}$base_name:$pr_count:$branch_name:$version,"
+  else
+    DEVELOPMENT="${DEVELOPMENT}$base_name:$pr_count:$branch_name:$version,"
+  fi
+done
+
+function output() {
+  local color=$1
+  local item=$2
+  for token in ${item//,/ }; do
+    count=0
+    for part in ${token//:/ }; do
+      ((count += 1))
+      if [ "$count" -gt 2 ]; then
+        tput setaf "$color"
+      fi
+      if [ "$count" -eq 1 ]; then
+        printf "%-${max_repo_len}s " "$part"
+      elif [ "$count" -eq 3 ]; then
+        if [ "$part" != "master" ] && [ "$part" != "main" ]; then
+          tput setaf 6
+        else
+          tput setaf 2
+        fi
+        printf "%-${max_branch_len}s " "$part"
+        tput sgr0
+      elif [ "$count" -eq 4 ]; then
+        printf "%-10s " "$part"
+      else
+        printf "%-5s " "$part"
+      fi
+      if [ "$count" -gt 2 ]; then
+        tput sgr0
+      fi
+    done
+    printf "\n"
+  done
+}
+
+output 2 "$RELEASABLE"
+output 6 "$DEVELOPMENT"
+output 3 "$UNCOMMITTED"
+
+echo "${PULLS}"
+#soopr blockchaintp btp-engineering
+#soopr catenasys btp-engineering

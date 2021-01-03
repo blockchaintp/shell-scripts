@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# shellcheck source=include.sh
+source "$(dirname "${BASH_SOURCE[0]}")/include.sh"
+
+source /etc/os-release
+
+addCliOptions
+options::add -o p -d "server port" -a -m -e PORT
+options::add -o s -d "fqdn of the server" -a -m -e FQDN
+
+options::parse "$@"
+
+# shellcheck disable=2153
+_FQDN=${FQDN//./_}
+
+HOSTNAME=$(echo "$FQDN" | awk -F. '{print $1}')
+DOMAIN=${FQDN/#${HOSTNAME}./}
+
+CERT_GROUP="local"
+if [ -z "$DOMAIN" ]; then
+  # shellcheck disable=2034
+  CERT_GROUP="$DOMAIN"
+fi
+
+TMPDIR=$(mktemp -d)
+
+cd "${TMPDIR}" || error_exit "Cannot cd to $TMPDIR"
+
+INFO "Fetching certificates for $FQDN:$PORT"
+openssl s_client -showcerts -verify 5 \
+  -connect "$FQDN:$PORT" </dev/null 2>/dev/null |
+  awk '/BEGIN/,/END/{ if(/BEGIN/){a++}; out="cert"a".crt"; print >out}'
+
+INFO "Renaming certificates"
+find . -name "*.crt" | while read -r cert; do
+  INFO "Rename $cert"
+  newname=$(openssl x509 -noout -subject -in "$cert" |
+    sed -n 's/^.*CN=\(.*\)$/\1/; s/[ ,.*]/_/g; s/__/_/g; s/^_//g;p').pem
+  INFO "Renamed $cert to $newname"
+  mv "$cert" "$newname"
+done
+
+function add-certs-amzn() {
+  for cert in *.pem; do
+    if [ "$cert" = "${_FQDN}.pem" ]; then
+      continue
+    fi
+    INFO "Copying $cert to /etc/pki/ca-trust/source/anchors/"
+    sudo cp "$cert" /etc/pki/ca-trust/source/anchors/
+  done
+  INFO "Updating CA-Trust"
+  sudo update-ca-trust extract
+}
+
+case $ID in
+  amzn)
+    add-certs-amzn
+    ;;
+  ubuntu)
+    add-certs-ubuntu
+    ;;
+esac

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# shellcheck disable=SC1090
+source "$(dirname "$0")/include.sh"
+
+addCliOptions
+options::add -o l -d "label to select the validators" -a -m -e LABEL
+
+options::parse "$@"
+
+INFO "Copying keys from pods with label $LABEL"
+for pod in $(kubectl get pods -l "$LABEL" | grep -v NAME | awk '{print $1}' | \
+  sort); do
+  node_name=$(kubectl get pod "$pod" -o json | jq -r '.spec.nodeName')
+  INFO "Working on $node_name with pod $pod"
+  mkdir -p "keys/$node_name"
+  ln -s "$node_name" "keys/$pod"
+  exec::capture kubectl cp "$pod:/etc/sawtooth/keys/validator.priv" \
+    "keys/$node_name/validator.priv" -c validator
+  exec::capture kubectl cp "$pod:/etc/sawtooth/keys/validator.pub" \
+    "keys/$node_name/validaator.pub" -c validator
+done

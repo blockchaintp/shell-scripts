@@ -1,0 +1,26 @@
+#!/bin/bash
+
+function syntax() {
+  echo "$0 -h "
+  echo "    prints this help message"
+  echo "$0 <ssh_connect> [...<ssh_connect>] "
+  echo "    checks the bios and sgx driver version information for the specified host"
+}
+
+for arg in "$@"; do
+  if [ "$arg" = "-h" ]; then
+    syntax
+    exit 1
+  fi
+done
+
+_dmidecode=(sudo bash -c \"/sbin/dmidecode)
+_driver=(sudo bash -c \"modinfo isgx\")
+for host in "$@"; do
+  vendor=$(ssh "$host" "${_dmidecode[@]}" -s bios-vendor\" 2>&1)
+  version=$(ssh "$host" "${_dmidecode[@]}" -s bios-version\" 2>&1)
+  release=$(ssh "$host" "${_dmidecode[@]}" -s bios-release-date\" 2>&1)
+  # shellcheck disable=SC2029
+  driver=$(ssh "$host" "${_driver[@]}" | grep srcversion | awk '{print $NF}')
+  echo "$host vendor=$vendor version=$version release=$release driver=$driver"
+done

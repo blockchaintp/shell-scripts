@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# shellcheck disable=SC1090
+source "$(dirname "$0")/include.sh"
+
+addCliOptions
+options::add -o W -d "directory to watch for changes" -a -m -e WatchDir
+options::add -o w -d "working directory" -a -m -e WorkingDir
+options::add -o t -d "interval to check for changes" -a -m -e WaitTime
+
+options::parse "$@"
+shift "$((OPTIND - 1))"
+
+if [ -z "$WaitTime" ]; then
+  WaitTime=3
+fi
+
+WorkingDir=${WorkingDir:-$WatchDir}
+
+function wait_for_change() {
+  local wait_time
+  wait_time="${1:-3}"
+  cd "$WatchDir" >/dev/null || error_exit "$WatchDir not found"
+  local start_version
+  start_version=$(find "$WatchDir" -ls 2>/dev/null | sort |cksum)
+  local current_version
+  current_version="$start_version"
+  while [ "$start_version" = "$current_version" ]; do
+    read -r -t "$wait_time" COMMAND
+    if [ "$COMMAND" = "X" ]; then
+      current_version="go"
+    else
+      current_version=$(find "$WatchDir" -ls 2>/dev/null | sort |cksum)
+    fi
+  done
+  cd - >/dev/null || error_exit "Failed to return to original directory"
+}
+
+function run_command() {
+  INFO "Working directory $WorkingDir"
+  cd "$WorkingDir" >/dev/null || error_exit "$WorkingDir not found"
+  INFO "Executing command: $*"
+  "$@"
+  INFO "EXIT: $?"
+  cd - >/dev/null || error_exit "Failed to return to original directory"
+}
+
+function main() {
+  INFO "Working directory $WorkingDir"
+  INFO "Watching directory $WatchDir"
+  INFO "Polling interval $WaitTime"
+  INFO "Executing command: $*"
+  while true; do
+    wait_for_change "$WaitTime"
+    run_command "$@"
+  done
+}
+
+main "$@"

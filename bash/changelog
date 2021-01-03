@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# shellcheck disable=SC1090
+source "$(dirname "$0")/include.sh"
+
+addCliOptions
+
+options::parse "$@"
+
+export GIT_PAGER=cat
+
+function changelog::fromto() {
+  local from to base_url
+  from=${1:?}
+  to=${2:?}
+  base_url=${3}
+  if [ -n "$base_url" ]; then
+    git log "$from"..."$to"  --pretty=format:"* %s [view commit]($base_url/%H)"
+  else
+     git log "$from"..."$to"  --pretty=format:"* %s"
+  fi
+}
+
+function changelog::tagsinhistory {
+  git log --no-walk --pretty="%d"  -n 100000|grep "(tag"|awk '{print $2}'| \
+    sed -e 's/)//' | awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }'
+}
+
+function changelog::projecturl() {
+  local origin_url
+  origin_url=$(git remote -v |grep "^origin"|head -1)
+  if echo "$origin_url" | grep -q github; then
+    local project_url
+    project_url=$(echo "$origin_url"|awk '{print $2}')
+    project_url=${project_url//.git}
+    project_url=${project_url//git@github.com:}
+    echo "http://github.com/$project_url/commit"
+  fi
+}
+
+function changelog::full {
+  local later_tag=
+  echo "# CHANGELOG"
+  echo
+  for tag in $(changelog::tagsinhistory); do
+    if [ -z "$later_tag" ]; then
+      later_tag="$tag"
+      this_version=$(git describe --tags)
+      if [ "$this_version" != "$tag" ]; then
+        echo "## $this_version"
+        echo
+        changelog::fromto "$tag" "HEAD" "$(changelog::projecturl)"
+        echo
+        echo
+      fi
+    else
+      echo "## $later_tag"
+      echo
+      changelog::fromto "$tag" "$later_tag" "$(changelog::projecturl)"
+      echo
+      echo
+      later_tag="$tag"
+    fi
+  done
+}
+#changelog::fromto "$START" "$END" "$(changelog::projecturl)"
+changelog::full

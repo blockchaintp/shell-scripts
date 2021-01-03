@@ -1,0 +1,181 @@
+#!/bin/bash
+
+function start() {
+  local cluster=$1
+  echo @startuml "$ns"
+  cat <<EOF
+' Azure
+!define AzurePuml https://raw.githubusercontent.com/RicardoNiepel/Azure-PlantUML/release/2-1/dist
+
+!includeurl AzurePuml/AzureCommon.puml
+!includeurl AzurePuml/AzureSimplified.puml
+
+' Kubernetes
+!define KubernetesPuml https://raw.githubusercontent.com/dcasati/kubernetes-PlantUML/master/dist
+
+!includeurl KubernetesPuml/kubernetes_Context.puml
+!includeurl KubernetesPuml/kubernetes_Simplified.puml
+!includeurl KubernetesPuml/OSS/KubernetesSvc.puml
+!includeurl KubernetesPuml/OSS/KubernetesPod.puml
+!includeurl KubernetesPuml/OSS/KubernetesJob.puml
+!includeurl KubernetesPuml/OSS/KubernetesCronjob.puml
+!includeurl KubernetesPuml/OSS/KubernetesIng.puml
+!includeurl KubernetesPuml/OSS/KubernetesSts.puml
+!includeurl KubernetesPuml/OSS/KubernetesSecret.puml
+!includeurl KubernetesPuml/OSS/KubernetesDs.puml
+!includeurl KubernetesPuml/OSS/KubernetesRs.puml
+!includeurl KubernetesPuml/OSS/KubernetesCm.puml
+!includeurl KubernetesPuml/OSS/KubernetesDeploy.puml
+
+
+left to right direction
+EOF
+}
+
+function getItems() {
+  local ns=$1
+  local itemType=$2
+  if [ "$itemType" = "rs" ]; then
+    getRs "$@"
+  else
+    if [ -n "$3" ]; then
+      selector=(-l "$3")
+    else
+      selector=()
+    fi
+    kubectl get "$itemType" -n "$ns" -o name "${selector[@]}" | awk -F/ '{print $2}'
+  fi
+}
+
+function getRs() {
+  local ns=$1
+  local itemType=$2
+  if [ -n "$3" ]; then
+    selector=(-l "$3")
+  else
+    selector=()
+  fi
+  kubectl get all -n "$ns" "${selector[@]}" | grep replicaset.apps |
+    awk '{ if ($2 + $3 + $4 != 0) print $1}' | awk -F/ '{print $2}'
+}
+
+function getChildren() {
+  local parentType=$1
+  local childType=$2
+  local ns=$3
+  local clean_ns=${ns//-/_}
+  local res=$4
+  local clean_res=${res//-/_}
+  local pumlTypeParent=$5
+  local pumlTypeChild=$6
+  local extra=$7
+  select=$(kubectl describe -n "$ns" \
+    "$parentType" "$res" | grep "^Selector:" | awk '{print $NF}')
+  echo \'"$ns" "$parentType" "$res" Selector "$childType" "$select"
+  if [ "$select" = '<none>' ]; then
+    return
+  fi
+  for child in $(getItems "$ns" "$childType" "$select"); do
+    clean_child=${child//-/_}
+    echo "Rel${extra}(${pumlTypeParent}_${clean_ns}_${clean_res},${pumlTypeChild}_${clean_ns}_${clean_child},\"\")"
+  done
+}
+
+function item() {
+  local type=$1
+  local ns=$2
+  local clean_ns=${ns//-/_}
+  local name=$3
+  local clean_name=${name//-/_}
+  cat <<EOF
+    Kubernetes${type}(${type}_${clean_ns}_${clean_name}, "$name", "")
+EOF
+}
+
+function getNamespaces() {
+  kubectl get ns -o name | awk -F/ '{print $2}' | grep -v "^kube-\|openebs"
+}
+
+function namespace() {
+  local ns=$1
+  local clean_ns=${ns//-/_}
+  cat <<EOF
+  Namespace_Boundary(ns_${clean_ns},"$ns") {
+EOF
+  for item in $(getItems "$ns" ingress); do
+    item Ing "$ns" "$item"
+  done
+  for item in $(getItems "$ns" svc); do
+    item Svc "$ns" "$item"
+  done
+  for item in $(getItems "$ns" ds); do
+    item Ds "$ns" "$item"
+  done
+  for item in $(getItems "$ns" sts); do
+    item Sts "$ns" "$item"
+  done
+  for item in $(getItems "$ns" deployment); do
+    item Deploy "$ns" "$item"
+  done
+  for item in $(getItems "$ns" pod); do
+    item Pod "$ns" "$item"
+  done
+  for item in $(getRs "$ns" replicaset); do
+    item Rs "$ns" "$item"
+  done
+  for item in $(getItems "$ns" job); do
+    item Job "$ns" "$item"
+  done
+  for item in $(getItems "$ns" cronjob); do
+    item Cronjob "$ns" "$item"
+  done
+  # for item in $(getItems "$ns" cm); do
+  #   item Cm "$ns" "$item"
+  # done
+  # for item in $(getItems "$ns" secret|grep -v "token\|helm"); do
+  #   item Secret "$ns" "$item"
+  # done
+  cat <<EOF
+  }
+EOF
+}
+
+function cluster() {
+  local cluster=$1
+  start "$cluster"
+  cat <<EOF
+Cluster_Boundary(cluster, "$cluster") {
+EOF
+  for ns in $(getNamespaces); do
+    namespace "$ns"
+  done
+  echo "}"
+
+  for ns in $(getNamespaces); do
+    for parent in $(getItems "$ns" deployment); do
+      getChildren deployment rs "$ns" "$parent" Deploy Rs _U
+    done
+    for parent in $(getItems "$ns" sts); do
+      getChildren sts pod "$ns" "$parent" Sts Pod _U
+    done
+    for parent in $(getItems "$ns" rs); do
+      getChildren rs pod "$ns" "$parent" Rs Pod _U
+    done
+    for parent in $(getItems "$ns" ds); do
+      getChildren ds pod "$ns" "$parent" Ds Pod _U
+    done
+    for parent in $(getItems "$ns" job); do
+      getChildren job pod "$ns" "$parent" Job Pod _U
+    done
+    for parent in $(getItems "$ns" ingress); do
+      getChildren ingress svc "$ns" "$parent" Ing Svc
+    done
+    for parent in $(getItems "$ns" svc); do
+      getChildren svc pod "$ns" "$parent" Svc Pod
+    done
+  done
+
+  echo @enduml
+}
+
+cluster "$1"

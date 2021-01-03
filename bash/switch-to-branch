@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# shellcheck disable=SC1090
+source "$(dirname "$0")/include.sh"
+
+addCliOptions
+options::add -o c -d "client repository set" -a -e CLIENT
+options::add -o o -d "target organization" -a -m -e ORG
+options::add -o b -d "branch to switch to" -a -m -e BRANCH
+
+options::parse "$@"
+
+if [ -n "$CLIENT" ]; then
+  TARGET_DIR="${HOME}/git/clients/${CLIENT}/${ORG}"
+else
+  TARGET_DIR="${HOME}/git/${ORG}"
+fi
+
+INFO "Scanning $TARGET_DIR"
+for d in "$TARGET_DIR"/*; do
+  INFO "Switching $d"
+  if [ -d "$d/.git" ]; then
+    if ! cd "$d"; then
+      WARNING "Cannot cd to $d"
+      continue
+    fi
+    exec::hide git checkout "$BRANCH" "$@"
+    if ! cd - >/dev/null; then
+      WARNING "Cannot cd back to OWD"
+      continue
+    fi
+  else
+    continue
+  fi
+done

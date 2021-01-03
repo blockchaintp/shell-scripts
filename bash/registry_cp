@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# shellcheck disable=SC1090
+source "$(dirname "$0")/include.sh"
+
+addCliOptions
+options::add -o f -d "source registry" -a -m -e HOST
+options::add -o i -d "source image" -a -m -e IMAGE
+options::add -o r -d "image tag" -a -m -e VERSION
+options::add -o t -d "target registry" -a -m -e ARTIFACTORY
+
+options::parse "$@"
+
+exec::capture docker pull "$HOST/$IMAGE:$VERSION" ||
+  error_exit "Failed to pull $HOST/$IMAGE:$VERSION"
+
+exec::capture docker tag "$HOST/$IMAGE:$VERSION" \
+  "$ARTIFACTORY/$IMAGE:$VERSION" ||
+  error_exit "Failed to tag $ARTIFACTORY/$IMAGE:$VERSION"
+
+exec::capture docker push "$ARTIFACTORY/$IMAGE:$VERSION" ||
+  error_exit "Failed to push $ARTIFACTORY/$IMAGE:$VERSION"

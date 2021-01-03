@@ -1,0 +1,120 @@
+#!/bin/bash
+
+alias ku='kubectl config use-context'
+alias kc='kubectl config set-context --current'
+alias kn='kubectl config set-context --current --namespace'
+alias kd='kubectl describe'
+alias kl='kubectl logs'
+alias k='kubectl'
+alias kls='k config view -o json|jq ".contexts[].name" -r'
+alias klc='k config view -o json|jq ".clusters[].name" -r'
+alias klu='k config view -o json|jq ".users[].name" -r'
+#shellcheck disable=SC2142
+alias kln='k get ns -o name |awk -F/ "{print \$2}"'
+alias kg='k get'
+alias kl='k logs'
+alias ke='k exec'
+
+function ks {
+  local pod=$1
+  command=(kubectl exec -it "$pod")
+  if [ -n "$2" ]; then
+    local container=$1
+    shift
+    command+=(-c "$container")
+  fi
+  command+=(-- bash)
+  "${command[@]}"
+}
+
+function kss {
+  local pod=$1
+  command=(kubectl exec -it "$pod")
+  if [ -n "$2" ]; then
+    local container=$1
+    shift
+    command+=(-c "$container")
+  fi
+  command+=(-- sh)
+  "${command[@]}"
+}
+
+function update_eksctl {
+  curl --silent --location \
+    "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" |
+    tar xz -C /tmp
+  mkdir -p "$HOME/.local/bin"
+  mv /tmp/eksctl "$HOME/.local/bin"
+}
+
+function update_helm {
+  curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+}
+
+function update_pip3_packages {
+  local package=()
+  package+=(awscli)
+  package+=(pre-commit)
+  package+=(commitizen)
+  package+=(powerline-status)
+  package+=(powerline-gitstatus)
+  package+=(powerline-kubernetes)
+  package+=(docker-compose)
+  for pkg in "${package[@]}"; do
+    pip3 install "$pkg" --upgrade --upgrade-strategy only-if-needed --user
+  done
+}
+
+function update_packages {
+  if command -v yum; then
+    sudo yum update -y --nogpgcheck
+  elif command -v apt-get; then
+    sudo apt-get update -q -y
+    sudo apt-get upgrade -y -q
+    sudo apt-get autoremove -y -q
+  elif command -v nixos-rebuild; then
+    sudo nix-channel --update
+    sudo nixos-rebuild switch --upgrade
+  fi
+}
+
+function update_kubectl {
+  local latest
+  latest=$(curl -s \
+    https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+  tmpdir=$(mktemp -d)
+  cd "${tmpdir}" || return 1
+  curl -LO \
+  "https://storage.googleapis.com/kubernetes-release/release/${latest}/bin/linux/amd64/kubectl"
+  chmod +x kubectl
+  mv ./kubectl "$HOME/.local/bin"
+  cd - || return 1
+}
+
+function update_vundle {
+  git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+}
+
+function ua {
+  update_packages
+  update_eksctl
+  update_helm
+  update_kubectl
+  update_pip3_packages
+  update_vundle
+}
+
+function get_latest_btp_branch {
+  for d in *; do
+    echo "Check $d"
+    if [ -d "$d/.git" ];then
+      cd "$d" || continue
+      for b in $(git branch -la|grep origin/btp-releases|sort|tail); do
+        branch=${b##remotes/origin/}
+        echo "Set $d to branch $branch"
+        git checkout "$branch" "$@"
+      done
+      cd - || exit 1
+    fi
+  done
+}
