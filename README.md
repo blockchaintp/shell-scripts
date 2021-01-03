@@ -20,3 +20,6 @@ expect the `include.sh` to live in the same directory as the command.
   `bash` folder
 * All command scripts should use options.sh to parse arguments and document
   their usage.
+* Prefer dashes to underscores in script names
+* functions in include files (`*.sh`) should have a namespace qualification
+  such as `funcion foo::bar`  rather than just `function bar`
