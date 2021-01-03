@@ -1,6 +1,12 @@
 #!/bin/bash
 
+# shellcheck source=doc.sh
+source "$(dirname "${BASH_SOURCE[0]}")/doc.sh"
+
+@package dirs
+
 function dirs::of() {
+  @doc Return the directory of the calling script
   index=1
   local SOURCE="${BASH_SOURCE[$index]}"
   local DIR

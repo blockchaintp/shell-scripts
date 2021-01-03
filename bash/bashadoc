@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# shellcheck disable=SC1090
+source "$1"
+
+package=$(grep "@package" "$1" | awk '{print $NF}' | tail -1)
+funcs=$(declare -F | awk '{print $NF}' | grep -v "@")
+if [ "$package" != "." ]; then
+  title="$package ($(basename "$1"))"
+  funcs=$(echo "$funcs" | grep "^$package::")
+else
+  title="$1"
+  funcs=$(echo "$funcs" | grep -v "::")
+fi
+echo "# $title function documentation "
+for func in $funcs; do
+  docs=$(declare -f "$func" | grep "^\s*@doc " | sed -e 's/^\s*@doc//')
+  args=$(declare -f "$func" | grep "^\s*@arg " | sed -e 's/^\s*@arg/  /')
+  echo
+  echo "## $func"
+  echo
+  [ -n "$docs" ] && echo "$docs" | tr ";" " "
+  [ -n "$args" ] && echo && echo "### Arguments" && echo && echo "$args" |
+    tr ";" " "
+done

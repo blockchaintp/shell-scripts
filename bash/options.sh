@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# shellcheck source=doc.sh
+source "$(dirname "${BASH_SOURCE[0]}")/doc.sh"
+
+@package options
+
 OPTIONS=()
 declare -A OPTIONS_DOC
 declare -A OPTIONS_OPTIONAL
@@ -13,6 +18,7 @@ OPTIONS_PARSE_FUNCS=()
 OPTIONS_ENVIRONMENT=()
 
 function options::clear() {
+  @doc Clear the current options configuration
   OPTIONS=()
   OPTIONS_DOC=()
   OPTIONS_OPTIONAL=()
@@ -22,6 +28,7 @@ function options::clear() {
 }
 
 function options::add() {
+  @doc add an option to the current configuration
   local argument="false"
   local optional="true"
   local description="no description"
@@ -32,30 +39,39 @@ function options::add() {
     shift
     case "$opt" in
       -o)
+        @arg -o "<arg>" the option to add
         option="${1}"
         shift
         ;;
       -d)
+        @arg -d "<arg>" the description of the option
         description="${1}"
         shift
         ;;
       -m)
+        @arg -m the option is mandatory
         optional="false"
         ;;
       -a)
+        @arg -a the option has an argument
         argument="true"
         ;;
       -e)
+        @arg -a "<arg>" the option will set the named global environment var \
+          with its argument
         environment_var="${1}"
         declare -g "${environment_var}="
         shift
         ;;
       -x)
+        @arg -x "<arg>" the option will set the named global environment var \
+          as a flag
         environment_var="${1}"
         declare -g "${environment_var}=false"
         shift
         ;;
       -f)
+        @arg -f "<arg>" the option will call the named function with its argument
         parse_fn="${1}"
         shift
         ;;
@@ -79,6 +95,7 @@ function options::add() {
 }
 
 function options::spec() {
+  @doc echo the getopt spec defined by the options
   local spec=""
   for opt in "${OPTIONS[@]}"; do
     spec="${spec}${opt}"
@@ -90,6 +107,8 @@ function options::spec() {
 }
 
 function options::syntax() {
+  @doc echo the syntax of these options for as if used by command specified
+  @arg $1 the command specified
   local command=$1
   local spec=""
   items=()
@@ -109,7 +128,7 @@ function options::syntax() {
 }
 
 function options::doc() {
-  local command="$1"
+  @doc print the documentation for the options
   count=0
   printf "%s\n" "OPTIONS"
   for opt in "${OPTIONS[@]}"; do
@@ -130,6 +149,9 @@ function options::doc() {
 }
 
 function options::help() {
+  @doc print the full help for these options either for the calling script \
+    or for the specified command
+  @arg $1 optionally specify the command name
   local cmd
   if [ -z "$1" ]; then
     cmd="${BASH_SOURCE[1]}"
@@ -141,10 +163,13 @@ function options::help() {
 }
 
 function options::getopts() {
+  @doc run getops for the options specification
   getopts "$(options::spec)" "$@"
 }
 
 function options::parse() {
+  @doc parse the options using the provided argument array
+  @arg "$@" the provided argument array
   while options::getopts opt "$@"; do
     if [ "$opt" != "?" ]; then
       if [ -n "${OPTIONS_ENVIRONMENT[$opt]}" ]; then
