@@ -27,6 +27,9 @@ source "$DIR/fn.sh"
 #shellcheck source=options.sh
 source "$DIR/options.sh"
 
+#shellcheck source=git.sh
+source "$DIR/git.sh"
+
 function error_exit() {
   ERROR "$*"
   exit 1
@@ -37,7 +40,7 @@ function syntax_exit() {
   exit 1
 }
 
-function syntax {
+function syntax() {
   options::help "$(basename "${BASH_SOURCE[4]}")"
   exit 1
 }
@@ -46,12 +49,12 @@ function syntax {
 LOGFILE_DISABLE=true
 
 log_level=0
-function log-level {
+function log-level() {
   ((log_level += 1))
   set-log-level "$log_level"
 }
 
-function addCliOptions {
+function addCliOptions() {
   options::add -o h -d "prints syntax and exits" -f syntax_exit
   options::add -o v -d "set verbosity level" -f log-level
 }
