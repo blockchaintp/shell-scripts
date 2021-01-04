@@ -4,8 +4,9 @@
 source "$(dirname "$0")/include.sh"
 
 addCliOptions
+options::set_description "Cleans the target directory of branches which have \
+  lost their remote counterparts."
 options::add -o d -d "target directory" -a -e TARGET_DIR
-
 options::parse "$@"
 
 # globals

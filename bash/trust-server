@@ -6,9 +6,10 @@ source "$(dirname "${BASH_SOURCE[0]}")/include.sh"
 source /etc/os-release
 
 addCliOptions
+options::description "Add the specified server's certificate chain to this\
+ host's trust chain."
 options::add -o p -d "server port" -a -m -e PORT
 options::add -o s -d "fqdn of the server" -a -m -e FQDN
-
 options::parse "$@"
 
 # shellcheck disable=2153

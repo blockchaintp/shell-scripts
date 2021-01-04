@@ -16,6 +16,12 @@ OPTIONS_OPTIONAL=()
 OPTIONS_HAS_ARGS=()
 OPTIONS_PARSE_FUNCS=()
 OPTIONS_ENVIRONMENT=()
+OPTIONS_DESCRIPTION=""
+
+function options::syntax_exit() {
+  options::help "$(basename "${BASH_SOURCE[2]}")"
+  exit 1
+}
 
 function options::clear() {
   @doc Clear the current options configuration
@@ -25,6 +31,29 @@ function options::clear() {
   OPTIONS_HAS_ARGS=()
   OPTIONS_PARSE_FUNCS=()
   OPTIONS_ENVIRONMENT=()
+  OPTIONS_DESCRIPTION=""
+  options::add -o h -d "prints syntax and exits" -f options::syntax_exit &&
+    HELP_OPT_ADDED="true"
+}
+
+function options::set_description() {
+  @doc Set the description for the command using this options set.
+  OPTIONS_DESCRIPTION=${1:?}
+}
+# shellcheck disable=SC2120
+function options::description() {
+  @doc Print the description of the command using this option set.
+  @arg $1 the description to set, when empty just print the description
+  if [ -z "$1" ]; then
+    if [ -n "$OPTIONS_DESCRIPTION" ]; then
+      printf "DESCRIPTION\n"
+      printf "\n"
+      printf "  %s\n" "$OPTIONS_DESCRIPTION" | fold -s
+      printf "\n"
+    fi
+  else
+    options::set_description "$1"
+  fi
 }
 
 function options::add() {
@@ -106,8 +135,13 @@ function options::spec() {
   echo "$spec"
 }
 
+[ -z "$HELP_OPT_ADDED" ] &&
+  options::add -o h -d "prints syntax and exits" -f options::syntax_exit &&
+  HELP_OPT_ADDED="true"
+
 function options::syntax() {
   @doc echo the syntax of these options for as if used by command specified
+  # shellcheck disable=SC2086
   @arg $1 the command specified
   local command=$1
   local spec=""
@@ -123,8 +157,7 @@ function options::syntax() {
     items+=("$item")
   done
   printf "%s\n" "SYNTAX"
-  printf "\t%s %s\n" "$command" "${items[*]}"
-
+  printf "\n  %s %s\n\n" "$command" "${items[*]}"
 }
 
 function options::doc() {
@@ -146,19 +179,22 @@ function options::doc() {
     printf "\t-%s %-5s  %-40s\n" "$opt" "$args" "$mandatory $description"
     ((count += 1))
   done
+  printf "\n"
 }
 
 function options::help() {
   @doc print the full help for these options either for the calling script \
     or for the specified command
+  # shellcheck disable=SC2086
   @arg $1 optionally specify the command name
   local cmd
   if [ -z "$1" ]; then
-    cmd="${BASH_SOURCE[1]}"
+    cmd="${BASH_SOURCE[2]}"
   else
     cmd="$1"
   fi
   options::syntax "$(basename "${cmd}")"
+  options::description
   options::doc "$(basename "${cmd}")"
 }
 
@@ -185,7 +221,7 @@ function options::parse() {
         if command -v "${OPTIONS_PARSE_FUNCS[$opt]}" >/dev/null; then
           ${OPTIONS_PARSE_FUNCS[$opt]} "${OPTARG}"
         else
-          echo "ERROR: parse_functions must be defined or left out"
+          echo "ERROR: for option ($opt) parse_functions must be defined or left out"
           exit 1
         fi
       fi
@@ -193,4 +229,7 @@ function options::parse() {
       return 1
     fi
   done
+  if [ "${OPTIND}" -eq 1 ]; then
+    options::syntax_exit
+  fi
 }

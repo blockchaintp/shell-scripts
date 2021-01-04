@@ -4,9 +4,10 @@
 source "$(dirname "$0")/include.sh"
 
 addCliOptions
+options::description "Opens a tmux session with panels for each of the pods\
+ and containers specified running the provided command."
 options::add -o l -d "label to select for the console" -a -m -e LABEL
 options::add -o c -d "command to execute in the console" -a -m -e COMMAND
-
 options::parse "$@"
 shift $((OPTIND - 1))
 

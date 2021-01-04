@@ -4,6 +4,8 @@
 source "$(dirname "$0")/include.sh"
 
 addCliOptions
+options::description "Add a new tag to the repository based on semver and\
+ conventional commits."
 options::add -o t -d "target directory to examine and update" -a -m \
   -e TARGET_DIR
 options::add -o p -d "Patch tag" \
@@ -12,7 +14,6 @@ options::add -o n -d "Don't annotate tag" \
   -x DONT_ANNOTATE_TAG
 options::add -o b -d "proceed to bump minor version if breaking changes are found" \
   -x ALLOW_BREAKING
-
 options::parse "$@"
 
 pushd "$TARGET_DIR" >/dev/null || exit 1

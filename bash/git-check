@@ -9,23 +9,24 @@ LOGFILE_DISABLE=true
 DEPTH=3
 CLIENT=
 
-function set_organization {
+function set_organization() {
   EXTRA="${1}"
   ((DEPTH -= 1))
 }
 
-function set_client {
+function set_client() {
   BASE="clients/${1}"
   CLIENT="${1}"
 }
 
 addCliOptions
-options::add -o o -d "organization to scan" -a -f set_organization
+options::description "Check all the repositories according to the\
+ parameters and update keep them in sync with the origin if possible"
+options::add -o o -d "organization to scan" -a -m -f set_organization
 options::add -o b -d "base directory to scan" -a -e BASE
 options::add -o p -d "check for pull requests" -x GH_PR_CHECK
 options::add -o c -d "check repositories for a particular client" \
   -a -f set_client
-
 options::parse "$@"
 
 BASE=${BASE:-""}

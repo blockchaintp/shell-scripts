@@ -35,16 +35,6 @@ function error_exit() {
   exit 1
 }
 
-function syntax_exit() {
-  fn::if_exists syntax "$@"
-  exit 1
-}
-
-function syntax() {
-  options::help "$(basename "${BASH_SOURCE[4]}")"
-  exit 1
-}
-
 #shellcheck disable=SC2034
 LOGFILE_DISABLE=true
 
@@ -55,6 +45,5 @@ function log-level() {
 }
 
 function addCliOptions() {
-  options::add -o h -d "prints syntax and exits" -f syntax_exit
   options::add -o v -d "set verbosity level" -f log-level
 }

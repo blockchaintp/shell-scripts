@@ -1,26 +1,84 @@
 #!/bin/bash
 
-function syntax() {
-  echo "$0 -h "
-  echo "    prints this help message"
-  echo "$0 <ssh_connect> [...<ssh_connect>] "
-  echo "    checks the bios and sgx driver version information for the specified host"
-}
+# shellcheck disable=SC1090
+source "$(dirname "$0")/include.sh"
 
-for arg in "$@"; do
-  if [ "$arg" = "-h" ]; then
-    syntax
-    exit 1
+addCliOptions
+options::set_description "Checks either the local system or a list of ssh \
+  targets for their system BIOS version and SGX driver."
+options::add -o u -d "use sudo" -x USE_SUDO
+options::add -o s -d "use ssh" -x USE_SSH
+options::add -o l -d "run locally" -x RUN_LOCALLY
+options::parse "$@"
+shift $((OPTIND - 1))
+
+_dmidecode=(/sbin/dmidecode)
+_lsmod=(/sbin/lsmod)
+_driver=(modinfo isgx)
+
+vendor_cmd=("${_dmidecode[@]}" -s bios-vendor)
+version_cmd=("${_dmidecode[@]}" -s bios-version)
+release_cmd=("${_dmidecode[@]}" -s bios-release-date)
+lsmod_cmd=("${_lsmod[@]}")
+driver_cmd=("${_driver[@]}")
+
+if [ "$USE_SSH" != "true" ]; then
+  _cmd_prefix=()
+  if [ "$USE_SUDO" = "true" ]; then
+    _cmd_prefix=(sudo -S)
   fi
-done
 
-_dmidecode=(sudo bash -c \"/sbin/dmidecode)
-_driver=(sudo bash -c \"modinfo isgx\")
-for host in "$@"; do
-  vendor=$(ssh "$host" "${_dmidecode[@]}" -s bios-vendor\" 2>&1)
-  version=$(ssh "$host" "${_dmidecode[@]}" -s bios-version\" 2>&1)
-  release=$(ssh "$host" "${_dmidecode[@]}" -s bios-release-date\" 2>&1)
-  # shellcheck disable=SC2029
-  driver=$(ssh "$host" "${_driver[@]}" | grep srcversion | awk '{print $NF}')
-  echo "$host vendor=$vendor version=$version release=$release driver=$driver"
-done
+  DEBUG "${_cmd_prefix[*]} ${vendor_cmd[*]}"
+  vendor=$("${_cmd_prefix[@]}" "${vendor_cmd[@]}") ||
+    error_exit "Failed to execute bios-vendor command"
+  DEBUG "${_cmd_prefix[*]} ${version_cmd[*]}"
+  version=$("${_cmd_prefix[@]}" "${version_cmd[@]}") ||
+    error_exit "Failed to execute bios-version command"
+  DEBUG "${_cmd_prefix[*]} ${release_cmd[*]}"
+  release=$("${_cmd_prefix[@]}" "${release_cmd[@]}") ||
+    error_exit "Failed to execute bios-release-date command"
+  DEBUG "${_cmd_prefix[*]} ${lsmod_cmd[*]}"
+  mod_list=$("${_cmd_prefix[@]}" "${lsmod_cmd[@]}") ||
+    error_exit "Failed to execute lsmod command"
+
+  if echo "$mod_list" | grep isgx; then
+    DEBUG "${driver_cmd[*]}"
+    driver=$("${driver_cmd[@]}") || error_exit "Failed to execute driver command"
+  else
+    WARNING "No ISGX driver loaded on ${host}"
+    driver="(none)"
+  fi
+
+  INFO "host=localhost bios vendor=${vendor} version=${version} release=${release} driver=${driver}"
+else
+  for host in "$@"; do
+    _cmd_prefix=()
+    if [ "$USE_SUDO" = "true" ]; then
+      _cmd_prefix=(sudo -n)
+    fi
+    _cmd_prefix+=(ssh "$host")
+
+    DEBUG "${_cmd_prefix[*]} ${vendor_cmd[*]}"
+    vendor=$("${_cmd_prefix[@]}" "${vendor_cmd[@]}") ||
+      error_exit "Failed to execute bios-vendor command"
+    DEBUG "${_cmd_prefix[*]} ${version_cmd[*]}"
+    version=$("${_cmd_prefix[@]}" "${version_cmd[@]}") ||
+      error_exit "Failed to execute bios-version command"
+    DEBUG "${_cmd_prefix[*]} ${release_cmd[*]}"
+    release=$("${_cmd_prefix[@]}" "${release_cmd[@]}") ||
+      error_exit "Failed to execute bios-release-date command"
+    DEBUG "${_cmd_prefix[*]} ${lsmod_cmd[*]}"
+    mod_list=$("${_cmd_prefix[@]}" "${lsmod_cmd[@]}") ||
+      error_exit "Failed to execute lsmod command"
+
+    if echo "$mod_list" | grep isgx; then
+      DEBUG "${driver_cmd[*]}"
+      driver=$("${driver_cmd[@]}") || error_exit "Failed to execute driver command"
+    else
+      WARNING "No ISGX driver loaded on ${host}"
+      driver="(none)"
+    fi
+
+    INFO "host=${host} bios vendor=${vendor} version=${version} release=${release} driver=${driver}"
+  done
+fi

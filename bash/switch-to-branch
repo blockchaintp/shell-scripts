@@ -4,10 +4,11 @@
 source "$(dirname "$0")/include.sh"
 
 addCliOptions
+options::description "Switch all of the the branch of all of the target\
+ repositories to the specified branch"
 options::add -o c -d "client repository set" -a -e CLIENT
 options::add -o o -d "target organization" -a -m -e ORG
 options::add -o b -d "branch to switch to" -a -m -e BRANCH
-
 options::parse "$@"
 
 if [ -n "$CLIENT" ]; then

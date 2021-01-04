@@ -4,6 +4,7 @@
 source "$(dirname "$0")/include.sh"
 
 addCliOptions
+options::description "Fetch the logs for the containers into local files"
 options::add -o l -d "label of pod selector" -a -m -e selector
 options::add -o c -d "container whose logs to dump" -a -m -e container
 options::parse "$@"

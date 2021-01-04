@@ -4,10 +4,10 @@
 source "$(dirname "$0")/include.sh"
 
 addCliOptions
+options::description "Migrate the keys from one validator to another."
 options::add -o f -d "node to migrate from" -a -m -e FROM_NODE
 options::add -o t -d "node to migrate to" -a -m -e TRGT_NODE
 options::add -o l -d "label of the sawtooth" -a -m -e LABEL
-
 options::parse "$@"
 
 declare -A node2pod
@@ -24,9 +24,9 @@ function getNodeForPod() {
 }
 
 function mapPods() {
-  local label=${1:?}
-  INFO "mapping pods to nodes for label $label"
-  for p in $(getPodsForLabel "${label:?}"); do
+  local _label=${1:?}
+  INFO "mapping pods to nodes for label $_label"
+  for p in $(getPodsForLabel "${_label:?}"); do
     node=$(getNodeForPod "${p}")
     node2pod[$node]=$p
     # shellcheck disable=SC2034
@@ -60,8 +60,8 @@ function pushKeys() {
 }
 
 function unlabelNode() {
-  node=${1:?}
-  label=${2:?}
+  local node=${1:?}
+  local label=${2:?}
   INFO "Removing label $label from node $node"
   local neg_label
   neg_label="${label//=*/}-"
@@ -85,6 +85,7 @@ function waitForPodTermination() {
 }
 
 function main() {
+  # shellcheck disable=SC2153
   mapPods "$LABEL"
   from_pod=${node2pod[$FROM_NODE]}
   to_pod=${node2pod[$TRGT_NODE]}
