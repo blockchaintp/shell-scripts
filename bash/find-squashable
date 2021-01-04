@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# shellcheck disable=SC1090
+source "$(dirname "$0")/include.sh"
+
+addCliOptions
+options::add -o s -d "start from" -a -m -e START_FROM
+options::add -o e -d "end at" -a -e END_AT
+
+options::parse "$@"
+
+previous_cmt=
+previous_files=
+first_squash="true"
+for cmt in $(git::commits "$START_FROM" "$END_AT"); do
+  if [ -n "$previous_cmt" ]; then
+    these_files=$(git::files_changed "$cmt" | cksum)
+    if [ "$these_files" = "$previous_files" ]; then
+      if [ "$first_squash" = "true" ]; then
+        first_squash=$previous_cmt
+      fi
+    else
+      if [ "$first_squash" != "true" ]; then
+        echo
+        echo "$first_squash" to "$previous_cmt" could be squashed
+        git::log_fromto "${previous_cmt}~1" "$first_squash"
+        echo
+        git::files_changed "$previous_cmt"
+      fi
+      first_squash="true"
+    fi
+  fi
+  previous_cmt=$cmt
+  previous_files=$(git::files_changed "$cmt" | cksum)
+done
