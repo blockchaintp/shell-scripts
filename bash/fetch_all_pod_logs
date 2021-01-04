@@ -1,17 +1,16 @@
 #!/bin/bash
 
-selector=$1
-container=$2
-
 # shellcheck disable=SC1090
 source "$(dirname "$0")/include.sh"
 
-#shellcheck disable=SC2034
-LOGFILE_DISABLE=true
-set-log-level 2
+addCliOptions
+options::add -o l -d "label of pod selector" -a -m -e selector
+options::add -o c -d "container whose logs to dump" -a -m -e container
+options::parse "$@"
+shift $((OPTIND - 1))
 
 get_pods_cmd=(kubectl get pods -l "$selector" -o json)
-INFO "Fetching logs of pods for selector $selector container: $container"
+INFO "Fetching logs of pods for selector $selector container: ${container:?}"
 for pod in $("${get_pods_cmd[@]}" |
   jq -r '.items[].metadata.name'); do
   log_cmd=(kubectl logs "$pod" "--tail=10000" --timestamps)
