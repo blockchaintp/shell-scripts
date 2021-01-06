@@ -30,6 +30,9 @@ source "$DIR/options.sh"
 #shellcheck source=git.sh
 source "$DIR/git.sh"
 
+#shellcheck source=docker.sh
+source "$DIR/docker.sh"
+
 function error_exit() {
   log::error "$*"
   exit 1
