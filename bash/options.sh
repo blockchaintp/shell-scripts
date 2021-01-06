@@ -43,7 +43,7 @@ function options::set_description() {
 # shellcheck disable=SC2120
 function options::description() {
   @doc Print the description of the command using this option set.
-  @arg $1 the description to set, when empty just print the description
+  @arg _1_ the description to set, when empty just print the description
   if [ -z "$1" ]; then
     if [ -n "$OPTIONS_DESCRIPTION" ]; then
       printf "DESCRIPTION\n"
@@ -142,7 +142,7 @@ function options::spec() {
 function options::syntax() {
   @doc echo the syntax of these options for as if used by command specified
   # shellcheck disable=SC2086
-  @arg $1 the command specified
+  @arg _1_ the command specified
   local command=$1
   local spec=""
   items=()
@@ -186,7 +186,7 @@ function options::help() {
   @doc print the full help for these options either for the calling script \
     or for the specified command
   # shellcheck disable=SC2086
-  @arg $1 optionally specify the command name
+  @arg _1_ optionally specify the command name
   local cmd
   if [ -z "$1" ]; then
     cmd="${BASH_SOURCE[2]}"

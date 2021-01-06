@@ -18,23 +18,23 @@ fi
 
 cd "$TARGET_DIR" || error_exit "Failed to cd to $TARGET_DIR, check permissions"
 
-INFO "Fetching for repository $TARGET_DIR"
+log::info "Fetching for repository $TARGET_DIR"
 exec::capture git fetch -p
-INFO "Checking for branches without remotes"
+log::info "Checking for branches without remotes"
 for name in $(git branch -vv | grep -v '^\*' | grep -v "\[.*]" | awk '{print $1}'); do
-  INFO "Branch $name has no remote, deleting"
+  log::info "Branch $name has no remote, deleting"
   exec::capture git branch -D "$name"
 done
 
-INFO "Checking for branches where the remote has been deleted"
+log::info "Checking for branches where the remote has been deleted"
 for branch in $(git branch -vv | grep ': gone]' | grep -v "\*" | awk '{ print $1; }'); do
-  INFO "Deleting $branch"
+  log::info "Deleting $branch"
   exec::capture git branch -D "$branch"
 done
 
-INFO "Checking for old build tags"
+log::info "Checking for old build tags"
 for tag in $(git tag -l | grep build/); do
-  INFO "Deleting tag $tag"
+  log::info "Deleting tag $tag"
   exec::capture git push --delete origin "$tag"
   exec::capture git tag -d "$tag"
 done

@@ -39,19 +39,19 @@ function wait_for_change() {
 }
 
 function run_command() {
-  INFO "Working directory $WorkingDir"
+  log::info "Working directory $WorkingDir"
   cd "$WorkingDir" >/dev/null || error_exit "$WorkingDir not found"
-  INFO "Executing command: $*"
+  log::info "Executing command: $*"
   "$@"
-  INFO "EXIT: $?"
+  log::info "EXIT: $?"
   cd - >/dev/null || error_exit "Failed to return to original directory"
 }
 
 function main() {
-  INFO "Working directory $WorkingDir"
-  INFO "Watching directory $WatchDir"
-  INFO "Polling interval $WaitTime"
-  INFO "Executing command: $*"
+  log::info "Working directory $WorkingDir"
+  log::info "Watching directory $WatchDir"
+  log::info "Polling interval $WaitTime"
+  log::info "Executing command: $*"
   while true; do
     wait_for_change "$WaitTime"
     run_command "$@"

@@ -34,7 +34,7 @@ if [ -n "${BASE}" ]; then
   BASE="${BASE}/"
 fi
 
-INFO "Scanning $HOME/git/${BASE}${EXTRA} for repositories"
+log::info "Scanning $HOME/git/${BASE}${EXTRA} for repositories"
 max_repo_len=0
 max_branch_len=0
 for repo in $(find "$HOME/git/${BASE}${EXTRA}" -mindepth "${DEPTH}" -maxdepth "${DEPTH}" -name .git -exec dirname {} \; | sort); do
@@ -56,13 +56,13 @@ for repo in $(find "$HOME/git/${BASE}${EXTRA}" -mindepth "${DEPTH}" -maxdepth "$
   status=$(git status --short | wc -l)
   if [ "$status" = "0" ]; then
     if git diff "remotes/origin/$branch_name" --quiet >/dev/null 2>&1; then
-      INFO "Examining $base_name: up to date"
+      log::info "Examining $base_name: up to date"
     else
-      INFO "Examining $base_name: pulling"
+      log::info "Examining $base_name: pulling"
       exec::hide git pull
     fi
   else
-    INFO "Examining $base_name: dirty"
+    log::info "Examining $base_name: dirty"
   fi
   pr_count='.'
   if command -v gh >/dev/null; then
@@ -70,13 +70,13 @@ for repo in $(find "$HOME/git/${BASE}${EXTRA}" -mindepth "${DEPTH}" -maxdepth "$
       if [ "$GH_PR_CHECK" = "true" ]; then
         if [ "$orgname" = "blockchaintp" ] ||
           [ "$orgname" = "catenasys" ] || [ "$orgname" = "scealiontach" ]; then
-          DEBUG "Checking pull requests for $base_name"
+          log::debug "Checking pull requests for $base_name"
           pr_count=$(gh pr list | grep -cv "no open")
         fi
       fi
     elif [ "$CLIENT" = "TASE" ]; then
       if [ "$GH_PR_CHECK" = "true" ]; then
-        DEBUG "Checking pull requests for $base_name"
+        log::debug "Checking pull requests for $base_name"
         pr_count=$(bb -c "$CLIENT" pr-count "$base_name")
       fi
     fi
@@ -131,5 +131,3 @@ output 6 "$DEVELOPMENT"
 output 3 "$UNCOMMITTED"
 
 echo "${PULLS}"
-#soopr blockchaintp btp-engineering
-#soopr catenasys btp-engineering

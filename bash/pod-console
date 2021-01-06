@@ -14,25 +14,25 @@ shift $((OPTIND - 1))
 SESSION=$LABEL
 
 if tmux has-session -t "$SESSION"; then
-  DEBUG "Switch to session $SESSION"
+  log::debug "Switch to session $SESSION"
   tmux switch-client -t "$SESSION"
 else
-  DEBUG "Create session $SESSION"
+  log::debug "Create session $SESSION"
   tmux new-session -s "$SESSION" -d
 fi
 WINDOW=$LABEL-$RANDOM
-DEBUG "Create and select window $WINDOW"
+log::debug "Create and select window $WINDOW"
 tmux new-window -n "$WINDOW"
 tmux select-window -t "$WINDOW"
 count=0
 for pod in $(kubectl get pods -l "$LABEL" | grep -v Terminat | grep -v NAME | awk '{print $1}' | sort); do
   if [ "$count" -gt 0 ]; then
-    DEBUG "Split window on session $SESSION"
+    log::debug "Split window on session $SESSION"
     tmux split-window -v -t "$SESSION"
   fi
-  DEBUG "Execute on $SESSION: kubectl $COMMAND pod/$pod $*"
+  log::debug "Execute on $SESSION: kubectl $COMMAND pod/$pod $*"
   tmux send-keys -t "$SESSION" "kubectl $COMMAND pod/$pod $*" C-m
-  DEBUG "Tile window $WINDOW"
+  log::debug "Tile window $WINDOW"
   tmux select-layout tiled
   count=$((count + 1))
 done

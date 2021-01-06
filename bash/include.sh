@@ -31,7 +31,7 @@ source "$DIR/options.sh"
 source "$DIR/git.sh"
 
 function error_exit() {
-  ERROR "$*"
+  log::error "$*"
   exit 1
 }
 

@@ -25,7 +25,7 @@ function getNodeForPod() {
 
 function mapPods() {
   local _label=${1:?}
-  INFO "mapping pods to nodes for label $_label"
+  log::info "mapping pods to nodes for label $_label"
   for p in $(getPodsForLabel "${_label:?}"); do
     node=$(getNodeForPod "${p}")
     node2pod[$node]=$p
@@ -35,10 +35,10 @@ function mapPods() {
 }
 
 TEMP_DIR=$(mktemp -d)
-INFO "using temporary directory $TEMP_DIR"
+log::info "using temporary directory $TEMP_DIR"
 function getKeys() {
   local pod=${1:?}
-  INFO "fetching keys from $pod"
+  log::info "fetching keys from $pod"
   mkdir -p "$TEMP_DIR/$pod"
   kubectl cp "$pod:etc/sawtooth/keys" "$TEMP_DIR/$pod" -c validator
 }
@@ -46,7 +46,7 @@ function getKeys() {
 function pushKeys() {
   local from_pod=${1:?}
   local to_pod=${2:?}
-  INFO "push keys to $to_pod"
+  log::info "push keys to $to_pod"
   if [ -d "$TEMP_DIR/$from_pod" ]; then
     kubectl cp "$TEMP_DIR/$from_pod/validator.priv" "$to_pod:etc/sawtooth/keys/" \
       -c validator &&
@@ -54,7 +54,7 @@ function pushKeys() {
         -c validator
     return $?
   else
-    ERROR "Source keys don't exist at dir $TEMP_DIR/$from_pod"
+    log::error "Source keys don't exist at dir $TEMP_DIR/$from_pod"
     return 1
   fi
 }
@@ -62,7 +62,7 @@ function pushKeys() {
 function unlabelNode() {
   local node=${1:?}
   local label=${2:?}
-  INFO "Removing label $label from node $node"
+  log::info "Removing label $label from node $node"
   local neg_label
   neg_label="${label//=*/}-"
   kubectl label node "$node" "$neg_label"
@@ -71,16 +71,16 @@ function unlabelNode() {
 function labelNode() {
   node=${1:?}
   label=${2:?}
-  INFO "Removing label $label from node $node"
+  log::info "Removing label $label from node $node"
   kubectl label node "$node" "$label"
 }
 
 function waitForPodTermination() {
   local pod=${1:?}
-  INFO "Waiting for pod $pod to terminate"
+  log::info "Waiting for pod $pod to terminate"
   while kubectl get pod "$pod" -o name >/dev/null 2>&1; do
     sleep 5
-    INFO "Waiting for pod $pod to terminate"
+    log::info "Waiting for pod $pod to terminate"
   done
 }
 

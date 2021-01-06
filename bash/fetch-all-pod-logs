@@ -11,15 +11,15 @@ options::parse "$@"
 shift $((OPTIND - 1))
 
 get_pods_cmd=(kubectl get pods -l "$selector" -o json)
-INFO "Fetching logs of pods for selector $selector container: ${container:?}"
+log::info "Fetching logs of pods for selector $selector container: ${container:?}"
 for pod in $("${get_pods_cmd[@]}" |
   jq -r '.items[].metadata.name'); do
   log_cmd=(kubectl logs "$pod" "--tail=10000" --timestamps)
   if [ -n "$container" ]; then
-    INFO "Fetching $container logs of pod $pod to $pod.$container.out"
+    log::info "Fetching $container logs of pod $pod to $pod.$container.out"
     log_cmd+=(-c "$container")
   else
-    INFO "Fetching all logs of pod $pod to $pod.$container.out"
+    log::info "Fetching all logs of pod $pod to $pod.$container.out"
     log_cmd+=(--all-containers "--max-log-requests=100")
   fi
   "${log_cmd[@]}" | sed 's/\x1b\[[0-9;]*m//g' >"$pod.$container.out"
