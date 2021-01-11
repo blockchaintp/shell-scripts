@@ -10,12 +10,17 @@ repos:
     - id: trailing-whitespace
     - id: end-of-file-fixer
       #    - id: check-yaml
+    - id: check-executables-have-shebangs
     - id: check-added-large-files
     - id: check-json
     - id: check-merge-conflict
     - id: detect-aws-credentials
     - id: detect-private-key
     - id: mixed-line-ending
+    - id: no-commit-to-branch
+      args:
+        - --pattern
+        - '^(?!((fix|feature)\/[a-zA-Z0-9\-]+)$).*'
 - repo: https://github.com/commitizen-tools/commitizen
   rev: v2.13.0
   hooks:
@@ -41,6 +46,10 @@ repos:
       - -i
       - "2"
       - -ci
+- repo: https://github.com/Lucas-C/pre-commit-hooks-go
+  rev: v1.0.1
+  hooks:
+    - id: checkmake
 - repo: https://github.com/Lucas-C/pre-commit-hooks
   rev: v1.1.9
   hooks:
