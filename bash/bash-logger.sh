@@ -1,12 +1,17 @@
 #!/bin/bash
-#--------------------------------------------------------------------------------------------------
-# Bash Logger
-# Copyright (c) Dean Rather
-# Licensed under the MIT license
-# http://github.com/deanrather/bash-logger
-#--------------------------------------------------------------------------------------------------
 
-#--------------------------------------------------------------------------------------------------
+src_name=include_$(sha256sum "${BASH_SOURCE[0]}" | awk '{print $1}')
+if [ -z "${!src_name}" ]; then
+  declare -g "$src_name=${src_name}"
+else
+  return
+fi
+
+# shellcheck source=doc.sh
+source "$(dirname "${BASH_SOURCE[0]}")/doc.sh"
+@package log
+
+#-----------------------------------------------------------------------------
 # Configurables
 
 COMPONENT_NAME="${COMPONENT_NAME:-bash-logger}"
@@ -25,11 +30,18 @@ export LOG_COLOR_ALERT="\033[43m"     # Yellow Background
 export LOG_COLOR_EMERGENCY="\033[41m" # Red Background
 export RESET_COLOR="\033[0m"
 
-#--------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 # Individual Log Functions
 # These can be overwritten to provide custom behavior for different log levels
-
 function set-log-level() {
+  deprecated log::level "$@"
+}
+LOG_LEVEL=${LOG_LEVEL:-0}
+function log::level() {
+  if [ -z "$1" ]; then
+    echo "${LOG_LEVEL}"
+    return
+  fi
   local level=${1:?}
   LOG_DISABLE_TRACE=true
   LOG_DISABLE_DEBUG=true
@@ -47,51 +59,63 @@ function set-log-level() {
   if ((level > 3)); then
     LOG_DISABLE_TRACE=false
   fi
+  LOG_LEVEL=$level
 }
-
-set-log-level 0
+log::level 0
 
 TRACE() {
+  deprecated log::trace "$@"
+}
+log::trace() {
   if [ "$LOG_DISABLE_TRACE" = "false" ]; then
-    # shellcheck disable=SC2128
-    LOG_HANDLER_DEFAULT "$FUNCNAME" "$@"
+    LOG_HANDLER_DEFAULT TRACE "$@"
   fi
 }
 
 DEBUG() {
+  deprecated log::debug "$@"
+}
+log::debug() {
   if [ "$LOG_DISABLE_DEBUG" = "false" ]; then
-    # shellcheck disable=SC2128
-    LOG_HANDLER_DEFAULT "$FUNCNAME" "$@"
+    LOG_HANDLER_DEFAULT DEBUG "$@"
   fi
 }
 
 INFO() {
+  deprecated log::info "$@"
+}
+log::info() {
   if [ "$LOG_DISABLE_INFO" = "false" ]; then
-    # shellcheck disable=SC2128
-    LOG_HANDLER_DEFAULT "$FUNCNAME" "$@"
+    LOG_HANDLER_DEFAULT INFO "$@"
   fi
 }
 
 WARNING() {
+  deprecated log::warn "$@"
+}
+log::warn() {
   if [ "$LOG_DISABLE_WARNING" = "false" ]; then
-    # shellcheck disable=SC2128
-    LOG_HANDLER_DEFAULT "$FUNCNAME" "$@"
+    LOG_HANDLER_DEFAULT WARNING "$@"
   fi
 }
 
 # ERRORS indicate an event which make it impossible to continue
 #   they should never be filtered
 ERROR() {
-  # shellcheck disable=SC2128
-  LOG_HANDLER_DEFAULT "$FUNCNAME" "$@"
+  deprecated log::error "$@"
+}
+log::error() {
+  LOG_HANDLER_DEFAULT ERROR "$@"
 }
 
 # CRITICALS indicate an event which make it impossible to continue,
 #   and likely some sort of data loss/corruption
 #   they should never be filtered
 CRITICAL() {
-  # shellcheck disable=SC2128
-  LOG_HANDLER_DEFAULT "$FUNCNAME" "$@"
+  deprecated log::critical "$@"
+}
+log::critical() {
+  LOG_HANDLER_DEFAULT CRITICAL "$@"
 }
 
 # The following are log levels which are meant to be picked up by external
@@ -100,20 +124,26 @@ CRITICAL() {
 
 #EMERGENCY - issues that should be dealt with immediately
 EMERGENCY() {
-  # shellcheck disable=SC2128
-  LOG_HANDLER_DEFAULT "$FUNCNAME" "$@"
+  deprecated log::emergency "$@"
+}
+log::emergency() {
+  LOG_HANDLER_DEFAULT EMERGENCY "$@"
 }
 
 # ALERT - issues that should be dealt with soon
 ALERT() {
-  # shellcheck disable=SC2128
-  LOG_HANDLER_DEFAULT "$FUNCNAME" "$@"
+  deprecated log::alert "$@"
+}
+log::alert() {
+  LOG_HANDLER_DEFAULT ALERT "$@"
 }
 
 # NOTICE - issues that should be dealt with optionally
 NOTICE() {
-  # shellcheck disable=SC2128
-  LOG_HANDLER_DEFAULT "$FUNCNAME" "$@"
+  deprecated log::notice "$@"
+}
+log::notice() {
+  LOG_HANDLER_DEFAULT NOTICE "$@"
 }
 
 #--------------------------------------------------------------------------------------------------
@@ -142,12 +172,16 @@ FORMAT_LOG() {
 # Eg: LOG INFO "My info log"
 LOG() {
   local level="$1"
+  level=$(echo "$level" | awk '{ print toupper($0)}')
   local log="$2"
   local log_function_name="${!level}"
   $log_function_name "$log"
 }
 
 log() {
+  deprecated log::log "$@"
+}
+log::log() {
   LOG "$1" "$2"
 }
 #--------------------------------------------------------------------------------------------------
@@ -177,7 +211,7 @@ LOG_HANDLER_COLORTERM() {
   local color_variable="LOG_COLOR_$level"
   local color="${!color_variable}"
   log="$color$log$RESET_COLOR"
-  echo -en "$log"
+  echo >&2 -en "$log"
 }
 
 # Appends a log to the configured logfile

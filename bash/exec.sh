@@ -1,5 +1,12 @@
 #!/bin/bash
 
+src_name=include_$(sha256sum "${BASH_SOURCE[0]}" | awk '{print $1}')
+if [ -z "${!src_name}" ]; then
+  declare -g "$src_name=${src_name}"
+else
+  return
+fi
+
 # dirs.sh must be co-resident with this file
 # shellcheck source=dirs.sh
 source "$(dirname "${BASH_SOURCE[0]}")/dirs.sh"

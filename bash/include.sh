@@ -30,8 +30,11 @@ source "$DIR/options.sh"
 #shellcheck source=git.sh
 source "$DIR/git.sh"
 
+#shellcheck source=docker.sh
+source "$DIR/docker.sh"
+
 function error_exit() {
-  ERROR "$*"
+  log::error "$*"
   exit 1
 }
 
@@ -41,7 +44,7 @@ LOGFILE_DISABLE=true
 log_level=0
 function log-level() {
   ((log_level += 1))
-  set-log-level "$log_level"
+  log::level "$log_level"
 }
 
 function addCliOptions() {

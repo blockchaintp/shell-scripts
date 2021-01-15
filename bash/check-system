@@ -14,7 +14,7 @@ shift $((OPTIND - 1))
 
 _dmidecode=(/sbin/dmidecode)
 _lsmod=(/sbin/lsmod)
-_driver=(modinfo isgx)
+_driver=(modinfo isgx --field=srcversion)
 
 vendor_cmd=("${_dmidecode[@]}" -s bios-vendor)
 version_cmd=("${_dmidecode[@]}" -s bios-version)
@@ -28,57 +28,60 @@ if [ "$USE_SSH" != "true" ]; then
     _cmd_prefix=(sudo -S)
   fi
 
-  DEBUG "${_cmd_prefix[*]} ${vendor_cmd[*]}"
+  log::debug "${_cmd_prefix[*]} ${vendor_cmd[*]}"
   vendor=$("${_cmd_prefix[@]}" "${vendor_cmd[@]}") ||
     error_exit "Failed to execute bios-vendor command"
-  DEBUG "${_cmd_prefix[*]} ${version_cmd[*]}"
+  log::debug "${_cmd_prefix[*]} ${version_cmd[*]}"
   version=$("${_cmd_prefix[@]}" "${version_cmd[@]}") ||
     error_exit "Failed to execute bios-version command"
-  DEBUG "${_cmd_prefix[*]} ${release_cmd[*]}"
+  log::debug "${_cmd_prefix[*]} ${release_cmd[*]}"
   release=$("${_cmd_prefix[@]}" "${release_cmd[@]}") ||
     error_exit "Failed to execute bios-release-date command"
-  DEBUG "${_cmd_prefix[*]} ${lsmod_cmd[*]}"
+  log::debug "${_cmd_prefix[*]} ${lsmod_cmd[*]}"
   mod_list=$("${_cmd_prefix[@]}" "${lsmod_cmd[@]}") ||
     error_exit "Failed to execute lsmod command"
 
   if echo "$mod_list" | grep isgx; then
-    DEBUG "${driver_cmd[*]}"
+    log::debug "${driver_cmd[*]}"
     driver=$("${driver_cmd[@]}") || error_exit "Failed to execute driver command"
   else
-    WARNING "No ISGX driver loaded on ${host}"
+    log::warn "No ISGX driver loaded on ${host}"
     driver="(none)"
   fi
 
-  INFO "host=localhost bios vendor=${vendor} version=${version} release=${release} driver=${driver}"
+  log::info "host=localhost bios vendor=${vendor} version=${version} release=${release} driver=${driver}"
 else
   for host in "$@"; do
     _cmd_prefix=()
+    _cmd_postfix=()
+    _cmd_prefix=(ssh "$host")
     if [ "$USE_SUDO" = "true" ]; then
-      _cmd_prefix=(sudo -n)
+      _cmd_prefix+=(sudo -S bash -c \")
+      _cmd_postfix=(\")
     fi
-    _cmd_prefix+=(ssh "$host")
 
-    DEBUG "${_cmd_prefix[*]} ${vendor_cmd[*]}"
-    vendor=$("${_cmd_prefix[@]}" "${vendor_cmd[@]}") ||
+    log::debug "${_cmd_prefix[*]} ${vendor_cmd[*]} ${_cmd_postfix[*]}"
+    vendor=$("${_cmd_prefix[@]}" "${vendor_cmd[@]}" "${_cmd_postfix[@]}") ||
       error_exit "Failed to execute bios-vendor command"
-    DEBUG "${_cmd_prefix[*]} ${version_cmd[*]}"
-    version=$("${_cmd_prefix[@]}" "${version_cmd[@]}") ||
+    log::debug "${_cmd_prefix[*]} ${version_cmd[*]} ${_cmd_postfix[*]}"
+    version=$("${_cmd_prefix[@]}" "${version_cmd[@]}" "${_cmd_postfix[@]}") ||
       error_exit "Failed to execute bios-version command"
-    DEBUG "${_cmd_prefix[*]} ${release_cmd[*]}"
-    release=$("${_cmd_prefix[@]}" "${release_cmd[@]}") ||
+    log::debug "${_cmd_prefix[*]} ${release_cmd[*]} ${_cmd_postfix[*]}"
+    release=$("${_cmd_prefix[@]}" "${release_cmd[@]}" "${_cmd_postfix[@]}") ||
       error_exit "Failed to execute bios-release-date command"
-    DEBUG "${_cmd_prefix[*]} ${lsmod_cmd[*]}"
-    mod_list=$("${_cmd_prefix[@]}" "${lsmod_cmd[@]}") ||
+    log::debug "${_cmd_prefix[*]} ${lsmod_cmd[*]} ${_cmd_postfix[*]}"
+    mod_list=$("${_cmd_prefix[@]}" "${lsmod_cmd[@]}" "${_cmd_postfix[@]}") ||
       error_exit "Failed to execute lsmod command"
 
-    if echo "$mod_list" | grep isgx; then
-      DEBUG "${driver_cmd[*]}"
-      driver=$("${driver_cmd[@]}") || error_exit "Failed to execute driver command"
+    if echo "$mod_list" | grep -q isgx; then
+      log::debug "${_cmd_prefix[*]} ${driver_cmd[*]} ${_cmd_postfix[*]}"
+      driver=$("${_cmd_prefix[@]}" "${driver_cmd[@]}" "${_cmd_postfix[@]}") || error_exit "Failed to execute driver command"
     else
-      WARNING "No ISGX driver loaded on ${host}"
+      log::warn "No ISGX driver loaded on ${host}"
       driver="(none)"
     fi
 
-    INFO "host=${host} bios vendor=${vendor} version=${version} release=${release} driver=${driver}"
+    log::info "host=${host} bios vendor=${vendor} version=${version} release=${release} driver=${driver}"
+    echo "host=${host} bios vendor=${vendor} version=${version} release=${release} driver=${driver}"
   done
 fi

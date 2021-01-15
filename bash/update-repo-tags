@@ -22,7 +22,7 @@ LATEST_VERSION=$(echo "$LATEST_TAG" | cut -c2-)
 BREAKING_CHANGES=$(git log "$LATEST_TAG"..HEAD | grep -c "BREAKING CHANGE")
 CHANGES=$(git log "$LATEST_TAG"..HEAD | grep -c "^commit")
 
-NOTICE "$LATEST_VERSION $CHANGES changes  $BREAKING_CHANGES breaks"
+log::notice "$LATEST_VERSION $CHANGES changes  $BREAKING_CHANGES breaks"
 
 skip="true"
 if [ "$BREAKING_CHANGES" -gt 0 ]; then
@@ -30,7 +30,7 @@ if [ "$BREAKING_CHANGES" -gt 0 ]; then
     TAG=$("${DIR}/semver" bump minor "$LATEST_VERSION")
     skip="false"
   else
-    WARNING "Minor version changes due to breaking changes must be explicity allowed!"
+    log::warn "Minor version changes due to breaking changes must be explicity allowed!"
     exit 1
   fi
 elif [ "$CHANGES" -gt 0 ]; then
@@ -44,7 +44,7 @@ fi
 TAG="v${TAG}"
 
 if [ "$skip" = "false" ]; then
-  NOTICE "Will tag as $TAG"
+  log::notice "Will tag as $TAG"
   if [ "$DONT_ANNOTATE_TAG" = "true" ]; then
     git tag "$TAG"
   else

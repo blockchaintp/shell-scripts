@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# shellcheck disable=SC1090
+source "$(dirname "$0")/include.sh"
+export LOGFILE_DISABLE="true"
+
+addCliOptions
+options::description "Extract a useful collection of support information from a\
+ kubernetes namespace and tar it up"
+options::add -o n -d "namespace to target" -a -e NAMESPACE
+options::add -o o -d "output directory" -a -m -e OUT_DIR
+options::parse "$@"
+shift $((OPTIND - 1))
+
+if [ -n "${NAMESPACE}" ]; then
+  NS_ARGS=(-n "${NAMESPACE}")
+  OUT_DIR_NS="${OUT_DIR}/${NAMESPACE}"
+else
+  NS_ARGS=()
+  OUT_DIR_NS="${OUT_DIR}/CURRENT"
+fi
+OUT_DIR_LOGS="${OUT_DIR}/logs"
+
+dirs::replace "${OUT_DIR}"
+
+function topology {
+  log::notice "Saving topology"
+  dirs::ensure "${OUT_DIR_NS}"
+  k8s::get all "${NS_ARGS[@]}" -o yaml >"${OUT_DIR_NS}"/k8s-get-all.yaml
+}
+
+function configmaps {
+  log::notice "Saving configmaps"
+  dirs::ensure "${OUT_DIR_NS}"
+  k8s::get cm "${NS_ARGS[@]}" -o yaml >"${OUT_DIR_NS}"/k8s-get-cm.yaml
+}
+
+function logs {
+  log::notice "Saving logs"
+  dirs::ensure "${OUT_DIR_LOGS}"
+  for pod in $(k8s::get_pod_names "${NS_ARGS[@]}"); do
+    for container in $(k8s::get_containers_for_pod "$pod"); do
+      dirs::ensure "${OUT_DIR_LOGS}/$pod"
+      k8s::log "$pod" -c "$container" --timestamps \
+        >"${OUT_DIR_LOGS}/$pod/$container-current.log"
+      k8s::log "$pod" -c "$container" --timestamps \
+        -p >"${OUT_DIR_LOGS}/$pod/$container-previous.log" || true
+    done
+  done
+}
+
+function create_package {
+  local now
+  now=$(date '+%F-%H%M%z')
+  local file="${NAMESPACE:-CURRENT}-${now}.tar.gz"
+  log::notice "Creating package $file"
+  find "${OUT_DIR}" -type f -print0 | sed -e "s@$OUT_DIR/@@g" |
+    xargs -0 tar cfz "$file" -C "${OUT_DIR}"
+}
+
+topology
+configmaps
+logs
+create_package

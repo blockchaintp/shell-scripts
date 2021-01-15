@@ -28,17 +28,17 @@ TMPDIR=$(mktemp -d)
 
 cd "${TMPDIR}" || error_exit "Cannot cd to $TMPDIR"
 
-INFO "Fetching certificates for $FQDN:$PORT"
+log::info "Fetching certificates for $FQDN:$PORT"
 openssl s_client -showcerts -verify 5 \
   -connect "$FQDN:$PORT" </dev/null 2>/dev/null |
   awk '/BEGIN/,/END/{ if(/BEGIN/){a++}; out="cert"a".crt"; print >out}'
 
-INFO "Renaming certificates"
+log::info "Renaming certificates"
 find . -name "*.crt" | while read -r cert; do
-  INFO "Rename $cert"
+  log::info "Rename $cert"
   newname=$(openssl x509 -noout -subject -in "$cert" |
     sed -n 's/^.*CN=\(.*\)$/\1/; s/[ ,.*]/_/g; s/__/_/g; s/^_//g;p').pem
-  INFO "Renamed $cert to $newname"
+  log::info "Renamed $cert to $newname"
   mv "$cert" "$newname"
 done
 
@@ -47,10 +47,10 @@ function add-certs-amzn() {
     if [ "$cert" = "${_FQDN}.pem" ]; then
       continue
     fi
-    INFO "Copying $cert to /etc/pki/ca-trust/source/anchors/"
+    log::info "Copying $cert to /etc/pki/ca-trust/source/anchors/"
     sudo cp "$cert" /etc/pki/ca-trust/source/anchors/
   done
-  INFO "Updating CA-Trust"
+  log::info "Updating CA-Trust"
   sudo update-ca-trust extract
 }
 
