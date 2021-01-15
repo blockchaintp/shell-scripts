@@ -44,7 +44,7 @@ LOGFILE_DISABLE=true
 log_level=0
 function log-level() {
   ((log_level += 1))
-  set-log-level "$log_level"
+  log::level "$log_level"
 }
 
 function addCliOptions() {

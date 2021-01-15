@@ -229,7 +229,7 @@ function options::parse() {
       return 1
     fi
   done
-  if [ "${OPTIND}" -eq 1 ]; then
+  if [ -z "${NO_SYNTAX_EXIT}" ] && [ "${OPTIND}" -eq 1 ]; then
     options::syntax_exit
   fi
 }
