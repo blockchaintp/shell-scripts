@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 src_name=include_$(sha256sum "${BASH_SOURCE[0]}" | awk '{print $1}')
 if [ -z "${!src_name}" ]; then

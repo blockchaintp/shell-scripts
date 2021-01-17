@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck source=include.sh
 source "$(dirname "${BASH_SOURCE[0]}")/include.sh"

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # dirs.sh must be co-resident with this file
 # shellcheck source=dirs.sh
