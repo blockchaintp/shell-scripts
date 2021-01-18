@@ -3,8 +3,8 @@
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
 @include options
-@include log
 @include git
+@include log
 
 options::standard
 options::description "Add a new tag to the repository based on semver and\

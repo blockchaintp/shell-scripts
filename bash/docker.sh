@@ -2,8 +2,8 @@
 # shellcheck source=includer.sh
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-@include doc
 @include commands
+@include doc
 @include log
 
 @package docker

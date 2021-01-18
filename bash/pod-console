@@ -2,10 +2,10 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-@include options
-@include log
 @include commands
 @include k8s
+@include log
+@include options
 
 options::standard
 options::description "Opens a tmux session with panels for each of the pods\

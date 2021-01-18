@@ -3,10 +3,10 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-@include options
-@include log
 @include exec
 @include git
+@include log
+@include options
 
 #shellcheck disable=SC2034
 LOGFILE_DISABLE=true

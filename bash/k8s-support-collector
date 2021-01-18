@@ -2,10 +2,10 @@
 # shellcheck source=includer.sh
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-@include options
-@include log
-@include k8s
 @include dirs
+@include k8s
+@include log
+@include options
 
 options::standard
 options::description "Extract a useful collection of support information from a\

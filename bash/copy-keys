@@ -2,11 +2,11 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-@include options
 @include commands
-@include log
 @include exec
 @include k8s
+@include log
+@include options
 
 options::standard
 options::set_description "Copies the keys from the validators to a directory \

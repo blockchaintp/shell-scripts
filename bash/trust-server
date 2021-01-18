@@ -2,9 +2,9 @@
 # shellcheck source=includer.sh
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-@include options
-@include log
 @include error
+@include log
+@include options
 
 source /etc/os-release
 

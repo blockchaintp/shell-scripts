@@ -2,6 +2,7 @@
 # shellcheck source=includer.sh
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
+@include commands
 @include doc
 @include log
 
@@ -45,7 +46,8 @@ function options::description() {
     if [ -n "$OPTIONS_DESCRIPTION" ]; then
       printf "DESCRIPTION\n"
       printf "\n"
-      printf "  %s\n" "$OPTIONS_DESCRIPTION" | fold -s
+      printf "  %s\n" "$OPTIONS_DESCRIPTION" |
+        sed -e 's/\ \ /\ /g' | $(commands::use fold) -s
       printf "\n"
     fi
   else
@@ -205,7 +207,7 @@ function options::standard() {
   options::add -o v -d "set verbosity level" -f log::level_increase
 }
 
-function options::parse() {
+function options::parse_available() {
   @doc parse the options using the provided argument array
   @arg "$@" the provided argument array
   while options::getopts opt "$@"; do
@@ -231,6 +233,12 @@ function options::parse() {
       return 1
     fi
   done
+}
+
+function options::parse() {
+  @doc parse the options using the provided argument array, if no args passes print syntax and exit
+  @arg "$@" the provided argument array
+  options::parse_available "$@"
   if [ -z "${NO_SYNTAX_EXIT}" ] && [ "${OPTIND}" -eq 1 ]; then
     options::syntax_exit
   fi

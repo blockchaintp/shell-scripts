@@ -3,8 +3,8 @@
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
 @include doc
-@include log
 @include error
+@include log
 
 @package dirs
 

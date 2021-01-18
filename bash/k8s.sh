@@ -2,11 +2,11 @@
 # shellcheck source=includer.sh
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-@include doc
 @include annotations
-@include log
-@include fn
 @include commands
+@include doc
+@include fn
+@include log
 
 @package k8s
 

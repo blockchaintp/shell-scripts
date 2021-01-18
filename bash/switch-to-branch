@@ -2,10 +2,10 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-@include options
-@include log
 @include exec
 @include git
+@include log
+@include options
 
 options::standard
 options::description "Switch all of the the branch of all of the target\
