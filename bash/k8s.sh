@@ -11,7 +11,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 @package k8s
 
 function k8s::ctl() {
-  @doc Generic kubectl command
+  @doc Smart commnad kubectl
   log::trace "fn::wrapped exec::capture $(commands::use kubectl) $*"
   fn::wrapped exec::capture "$(commands::use kubectl)" "$@"
 }
@@ -65,17 +65,21 @@ function k8s::get_containers_for_pod() {
 }
 
 function k8s::config() {
+  @doc Smart command kubectl config
   k8s::ctl config "$@"
 }
 
 function k8s::describe() {
+  @doc Smart command kubectl describe
   k8s::ctl describe "$@"
 }
 
 function k8s::current_ns() {
+  @doc Get the currently selected namespace
   k8s::config view --minify --output 'jsonpath={..namespace}'
 }
 
 function k8s::current_cluster() {
+  @doc Get the currently selected cluster
   k8s::config view --minify --output 'jsonpath={..context.cluster}'
 }

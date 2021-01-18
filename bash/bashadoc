@@ -6,20 +6,20 @@ source "$1"
 package=$(grep "@package" "$1" | awk '{print $NF}' | tail -1)
 funcs=$(declare -F | awk '{print $NF}' | grep -v "@")
 if [ "$package" != "." ]; then
-  title="$package ($(basename "$1"))"
+  title="\`$package\`"
   funcs=$(echo "$funcs" | grep "^$package::")
 else
   title="$1"
   funcs=$(echo "$funcs" | grep -v "::")
 fi
-echo "# $title function documentation "
+echo "# $title package"
 for func in $funcs; do
-  docs=$(declare -f "$func" | grep "^\s*@doc " | sed -e 's/^\s*@doc//')
-  args=$(declare -f "$func" | grep "^\s*@arg " | sed -e 's/^\s*@arg/  /')
+  docs=$(declare -f "$func" | grep "^\s*@doc " | sed -e 's/^\s*@doc\ *//')
+  args=$(declare -f "$func" | grep "^\s*@arg " | sed -e 's/^\s*@arg\ */- /')
   echo
-  echo "## $func"
+  echo "## \`$func\`"
   echo
-  [ -n "$docs" ] && echo "$docs" | tr ";" " "
-  [ -n "$args" ] && echo && echo "### Arguments" && echo && echo "$args" |
-    tr ";" " "
+  ([ -n "$docs" ] && echo "$docs" | tr ";" " " | sed -e 's/\ $//') || true
+  ([ -n "$args" ] && echo && echo "### Arguments" && echo && echo "$args" |
+    tr ";" " ") || true
 done

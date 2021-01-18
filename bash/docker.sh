@@ -9,6 +9,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 @package docker
 
 function docker::cmd() {
+  @doc Smart command for docker.
   $(commands::use docker) "$@"
 }
 

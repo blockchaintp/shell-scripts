@@ -58,11 +58,13 @@ function log::level() {
 }
 
 function log::level_increase() {
+  @doc Increase the LOG_LEVEL
   ((LOG_LEVEL += 1))
   log::level "$LOG_LEVEL"
 }
 
 function log::level_decrease() {
+  @doc Decrease the LOG_LEVEL
   ((LOG_LEVEL -= 1))
   log::level "$LOG_LEVEL"
 }
@@ -71,6 +73,7 @@ TRACE() {
   deprecated log::trace "$@"
 }
 log::trace() {
+  @doc Issue a TRACE level message
   if [ "$LOG_DISABLE_TRACE" = "false" ]; then
     LOG_HANDLER_DEFAULT TRACE "$@"
   fi
@@ -80,6 +83,7 @@ DEBUG() {
   deprecated log::debug "$@"
 }
 log::debug() {
+  @doc Issue a DEBUG level message
   if [ "$LOG_DISABLE_DEBUG" = "false" ]; then
     LOG_HANDLER_DEFAULT DEBUG "$@"
   fi
@@ -89,6 +93,7 @@ INFO() {
   deprecated log::info "$@"
 }
 log::info() {
+  @doc Issue an INFO level message
   if [ "$LOG_DISABLE_INFO" = "false" ]; then
     LOG_HANDLER_DEFAULT INFO "$@"
   fi
@@ -98,6 +103,7 @@ WARNING() {
   deprecated log::warn "$@"
 }
 log::warn() {
+  @doc Issue a WARNING level message
   if [ "$LOG_DISABLE_WARNING" = "false" ]; then
     LOG_HANDLER_DEFAULT WARNING "$@"
   fi
@@ -109,6 +115,7 @@ ERROR() {
   deprecated log::error "$@"
 }
 log::error() {
+  @doc Issue an unhideable ERROR level message
   LOG_HANDLER_DEFAULT ERROR "$@"
 }
 
@@ -119,6 +126,7 @@ CRITICAL() {
   deprecated log::critical "$@"
 }
 log::critical() {
+  @doc Issue a CRITICAL notice.
   LOG_HANDLER_DEFAULT CRITICAL "$@"
 }
 
@@ -131,6 +139,7 @@ EMERGENCY() {
   deprecated log::emergency "$@"
 }
 log::emergency() {
+  @doc Issue a EMERGENCY notice.
   LOG_HANDLER_DEFAULT EMERGENCY "$@"
 }
 
@@ -139,6 +148,7 @@ ALERT() {
   deprecated log::alert "$@"
 }
 log::alert() {
+  @doc Issue an ALERT notice.
   LOG_HANDLER_DEFAULT ALERT "$@"
 }
 
@@ -147,6 +157,7 @@ NOTICE() {
   deprecated log::notice "$@"
 }
 log::notice() {
+  @doc Issue a NOTICE notice.
   LOG_HANDLER_DEFAULT NOTICE "$@"
 }
 
