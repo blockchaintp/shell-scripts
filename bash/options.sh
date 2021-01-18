@@ -17,6 +17,7 @@ declare -g -A OPTIONS_ENVIRONMENT
 declare -g OPTIONS_DESCRIPTION
 
 function options::syntax_exit() {
+  @doc Print the command syntax and exit
   options::help "$(basename "${BASH_SOURCE[2]}")"
   exit 1
 }

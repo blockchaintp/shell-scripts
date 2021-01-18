@@ -25,17 +25,20 @@ WorkingDir=${WorkingDir:-$WatchDir}
 function wait_for_change() {
   local wait_time
   wait_time="${1:-3}"
-  cd "$WatchDir" >/dev/null || error::exit "$WatchDir not found"
+  cd "$WorkingDir" >/dev/null || error::exit "$WorkingDir not found"
   local start_version
-  start_version=$(find "$WatchDir" -ls 2>/dev/null | sort | cksum)
+  start_version=$(find "$WatchDir" -type f -ls 2>/dev/null | sort | cksum)
   local current_version
   current_version="$start_version"
+  log::trace "Start version $start_version"
   while [ "$start_version" = "$current_version" ]; do
+    log::trace "Waiting $wait_time for changes"
     read -r -t "$wait_time" COMMAND
     if [ "$COMMAND" = "X" ]; then
       current_version="go"
     else
-      current_version=$(find "$WatchDir" -ls 2>/dev/null | sort | cksum)
+      current_version=$(find "$WatchDir" -type f -ls 2>/dev/null | sort | cksum)
+      log::trace "Current version $current_version"
     fi
   done
   cd - >/dev/null || error::exit "Failed to return to original directory"

@@ -9,7 +9,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 @package dirs
 
 function dirs::of() {
-  @doc Return the directory of the calling script
+  @doc Return the directory of the calling script.
   index=1
   local SOURCE="${BASH_SOURCE[$index]}"
   local DIR
@@ -25,7 +25,8 @@ function dirs::of() {
 }
 
 function dirs::safe_rmrf {
-  @doc an rm -rf command that refuses to delete certain paths
+  @doc an rm -rf command that refuses to delete certain paths.
+  @arg _@_ the list of paths to remove
   for path in "$@"; do
     case $path in
       /)
@@ -52,6 +53,8 @@ function dirs::safe_rmrf {
 }
 
 function dirs::replace {
+  @doc Replace the given directory by first removing it.
+  @arg _1_ the directory to replace
   local directory=${1:?}
   log::notice "This command will replace the contents of ${1}"
   if [ -d "$directory" ]; then
@@ -64,12 +67,15 @@ function dirs::replace {
 }
 
 function dirs::noreplace {
-  @doc returns an error if the directory exists and is not empty, otherwise ensure that it exists
+  @doc Return an error if the directory exists and is not empty, otherwise ensure that it exists
+  @arg _1_ the directory
   local directory=${1:?}
   log::notice "This command will replace the contents ${1}"
 }
 
 function dirs::ensure {
+  @doc Ensure that the directory exists, creating if necessary and possible.
+  @arg _1_ the directory
   local directory=${1:?}
   mkdir -p "${directory}" ||
     error::exit "Failed to create ${directory}"

@@ -15,11 +15,11 @@ fi
 echo "# $title package"
 for func in $funcs; do
   docs=$(declare -f "$func" | grep "^\s*@doc " | sed -e 's/^\s*@doc\ *//')
-  args=$(declare -f "$func" | grep "^\s*@arg " | sed -e 's/^\s*@arg\ */ - \$/')
+  args=$(declare -f "$func" | grep "^\s*@arg " | sed -e 's/^\s*@arg\ */- /')
   echo
   echo "## \`$func\`"
   echo
-  [ -n "$docs" ] && echo "$docs" | tr ";" " " | sed -e 's/\ $//'
-  [ -n "$args" ] && echo && echo "### Arguments" && echo && echo "$args" |
-    tr ";" " "
+  ([ -n "$docs" ] && echo "$docs" | tr ";" " " | sed -e 's/\ $//') || true
+  ([ -n "$args" ] && echo && echo "### Arguments" && echo && echo "$args" |
+    tr ";" " ") || true
 done

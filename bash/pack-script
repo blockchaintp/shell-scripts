@@ -31,7 +31,7 @@ function get_all_includes() {
     scans_left="false"
     for inc in "${!checked[@]}"; do
       if [ "${checked[$inc]}" = "false" ]; then
-        for subinc in $(::get_includes "$(include::find $inc)"); do
+        for subinc in $(::get_includes "$(includer::find $inc)"); do
           if [ -z "${checked[$subinc]}" ]; then
             log::info "Adding $subinc"
             checked[$subinc]="false"
@@ -49,10 +49,10 @@ function get_all_includes() {
 
 set -e
 echo "#!/usr/bin/env bash" >"${OutputFile:?}"
-grep -v "^@include" "$(include::find doc)" |
+grep -v "^@include" "$(includer::find doc)" |
   grep -v "includer.sh" |
   grep -v "^#!" >>"${OutputFile:?}"
-grep -v "^@include" "$(include::find annotations)" |
+grep -v "^@include" "$(includer::find annotations)" |
   grep -v "includer.sh" |
   grep -v "^#!" >>"${OutputFile:?}"
 
@@ -62,7 +62,7 @@ for inc in $(get_all_includes "${TargetFile:?}"); do
   elif [ "$inc" = "doc" ]; then
     continue
   fi
-  grep -v "^@include" "$(include::find "$inc")" |
+  grep -v "^@include" "$(includer::find "$inc")" |
     grep -v "includer.sh" |
     grep -v "^#!" >>"${OutputFile:?}"
 done

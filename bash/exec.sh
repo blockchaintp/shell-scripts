@@ -8,7 +8,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 @package exec
 
 function exec::capture() {
-  @doc Execute the provided command and capture the output to a log
+  @doc Execute the provided command and capture the output to a log.
+  @arg _1_ the command to execute
+  @arg @ the arguments to the command
   if [ -n "$LOGFILE_DISABLE" ]; then
     local logfile=${LOGFILE:-"exec.log"}
     "$@" 2>&1 | tee -a "$logfile"
