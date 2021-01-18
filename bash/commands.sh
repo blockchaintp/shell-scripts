@@ -26,7 +26,7 @@ function commands::err_not_found {
   @doc Print command not found error message and exit
   @arg _1_ the command that was not found
   local cmd=${1:?}
-  log::error "cmd is either not installed or not on the PATH"
+  log::error "$cmd is either not installed or not on the PATH"
   exit 1
 }
 
