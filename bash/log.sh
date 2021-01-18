@@ -9,7 +9,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 #-----------------------------------------------------------------------------
 # Configurables
 
-COMPONENT_NAME="${COMPONENT_NAME:-${BASH_SOURCE[-1]}}"
+COMPONENT_NAME="${COMPONENT_NAME:-$(basename "${BASH_SOURCE[-1]}")}"
 LOGDIR="${LOGDIR:-$HOME}"
 LOGFILE="${LOGFILE:-$HOME/${COMPONENT_NAME}.log}"
 #shellcheck disable=SC2034
