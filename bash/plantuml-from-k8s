@@ -1,4 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck source=includer.sh
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
+
+@include k8s
 
 function start() {
   local cluster=$1
@@ -43,7 +47,7 @@ function getItems() {
     else
       selector=()
     fi
-    kubectl get "$itemType" -n "$ns" -o name "${selector[@]}" | awk -F/ '{print $2}'
+    k8s::ctl get "$itemType" -n "$ns" -o name "${selector[@]}" | awk -F/ '{print $2}'
   fi
 }
 
@@ -55,7 +59,7 @@ function getRs() {
   else
     selector=()
   fi
-  kubectl get all -n "$ns" "${selector[@]}" | grep replicaset.apps |
+  k8s::ctl get all -n "$ns" "${selector[@]}" | grep replicaset.apps |
     awk '{ if ($2 + $3 + $4 != 0) print $1}' | awk -F/ '{print $2}'
 }
 

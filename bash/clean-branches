@@ -1,9 +1,14 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 # shellcheck disable=SC1090
-source "$(dirname "$0")/include.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-addCliOptions
+@include options
+@include log
+@include git
+@include exec
+@include error
+
+options::standard
 options::set_description "Cleans the target directory of branches which have \
   lost their remote counterparts."
 options::add -o d -d "target directory" -a -e TARGET_DIR
@@ -13,28 +18,28 @@ options::parse "$@"
 TARGET_DIR="${TARGET_DIR:-$(pwd)}"
 
 if [ ! -d "$TARGET_DIR/.git" ]; then
-  error_exit "$TARGET_DIR is not the root of a git repository"
+  error::exit "$TARGET_DIR is not the root of a git repository"
 fi
 
-cd "$TARGET_DIR" || error_exit "Failed to cd to $TARGET_DIR, check permissions"
+cd "$TARGET_DIR" || error::exit "Failed to cd to $TARGET_DIR, check permissions"
 
 log::info "Fetching for repository $TARGET_DIR"
-exec::capture git fetch -p
+exec::capture git::cmd fetch -p
 log::info "Checking for branches without remotes"
-for name in $(git branch -vv | grep -v '^\*' | grep -v "\[.*]" | awk '{print $1}'); do
+for name in $(git::cmd branch -vv | grep -v '^\*' | grep -v "\[.*]" | awk '{print $1}'); do
   log::info "Branch $name has no remote, deleting"
-  exec::capture git branch -D "$name"
+  exec::capture git::cmd branch -D "$name"
 done
 
 log::info "Checking for branches where the remote has been deleted"
-for branch in $(git branch -vv | grep ': gone]' | grep -v "\*" | awk '{ print $1; }'); do
+for branch in $(git::cmd branch -vv | grep ': gone]' | grep -v "\*" | awk '{ print $1; }'); do
   log::info "Deleting $branch"
-  exec::capture git branch -D "$branch"
+  exec::capture git::cmd branch -D "$branch"
 done
 
 log::info "Checking for old build tags"
-for tag in $(git tag -l | grep build/); do
+for tag in $(git::cmd tag -l | grep build/); do
   log::info "Deleting tag $tag"
-  exec::capture git push --delete origin "$tag"
-  exec::capture git tag -d "$tag"
+  exec::capture git::cmd push --delete origin "$tag"
+  exec::capture git::cmd tag -d "$tag"
 done

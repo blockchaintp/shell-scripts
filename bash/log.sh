@@ -1,22 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck source=includer.sh
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-src_name=include_$(sha256sum "${BASH_SOURCE[0]}" | awk '{print $1}')
-if [ -z "${!src_name}" ]; then
-  declare -g "$src_name=${src_name}"
-else
-  return
-fi
+@include doc
 
-# shellcheck source=doc.sh
-source "$(dirname "${BASH_SOURCE[0]}")/doc.sh"
 @package log
 
 #-----------------------------------------------------------------------------
 # Configurables
 
-COMPONENT_NAME="${COMPONENT_NAME:-bash-logger}"
+COMPONENT_NAME="${COMPONENT_NAME:-${BASH_SOURCE[-1]}}"
 LOGDIR="${LOGDIR:-$HOME}"
 LOGFILE="${LOGFILE:-$HOME/${COMPONENT_NAME}.log}"
+#shellcheck disable=SC2034
+LOGFILE_DISABLE=true
+
 export LOGFILE
 export LOG_FORMAT='%DATE %PID [%LEVEL] %MESSAGE'
 export LOG_DATE_FORMAT='+%F %T %Z'    # Eg: 2014-09-07 21:51:57 EST
@@ -33,9 +31,6 @@ export RESET_COLOR="\033[0m"
 #-----------------------------------------------------------------------------
 # Individual Log Functions
 # These can be overwritten to provide custom behavior for different log levels
-function set-log-level() {
-  deprecated log::level "$@"
-}
 LOG_LEVEL=${LOG_LEVEL:-0}
 function log::level() {
   if [ -z "$1" ]; then
@@ -61,7 +56,16 @@ function log::level() {
   fi
   LOG_LEVEL=$level
 }
-log::level 0
+
+function log::level_increase() {
+  ((LOG_LEVEL += 1))
+  log::level "$LOG_LEVEL"
+}
+
+function log::level_decrease() {
+  ((LOG_LEVEL -= 1))
+  log::level "$LOG_LEVEL"
+}
 
 TRACE() {
   deprecated log::trace "$@"

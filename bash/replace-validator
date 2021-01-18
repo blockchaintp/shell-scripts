@@ -1,9 +1,12 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 # shellcheck disable=SC1090
-source "$(dirname "$0")/include.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-addCliOptions
+@include options
+@include k8s
+@include log
+
+options::standard
 options::description "Migrate the keys from one validator to another."
 options::add -o f -d "node to migrate from" -a -m -e FROM_NODE
 options::add -o t -d "node to migrate to" -a -m -e TRGT_NODE
@@ -15,12 +18,12 @@ declare -A pod2node
 
 function getPodsForLabel() {
   local label=${1:?}
-  kubectl get pods -l "$label" -o name | awk -F/ '{print $2}'
+  k8s::ctl get pods -l "$label" -o name | awk -F/ '{print $2}'
 }
 
 function getNodeForPod() {
   local pod=${1:?}
-  kubectl get "pod/${pod}" -o json | jq -r '.spec.nodeName'
+  k8s::ctl get "pod/${pod}" -o json | jq -r '.spec.nodeName'
 }
 
 function mapPods() {
@@ -40,7 +43,7 @@ function getKeys() {
   local pod=${1:?}
   log::info "fetching keys from $pod"
   mkdir -p "$TEMP_DIR/$pod"
-  kubectl cp "$pod:etc/sawtooth/keys" "$TEMP_DIR/$pod" -c validator
+  k8s::ctl cp "$pod:etc/sawtooth/keys" "$TEMP_DIR/$pod" -c validator
 }
 
 function pushKeys() {
@@ -48,9 +51,9 @@ function pushKeys() {
   local to_pod=${2:?}
   log::info "push keys to $to_pod"
   if [ -d "$TEMP_DIR/$from_pod" ]; then
-    kubectl cp "$TEMP_DIR/$from_pod/validator.priv" "$to_pod:etc/sawtooth/keys/" \
+    k8s::ctl cp "$TEMP_DIR/$from_pod/validator.priv" "$to_pod:etc/sawtooth/keys/" \
       -c validator &&
-      kubectl cp "$TEMP_DIR/$from_pod/validator.pub" "$to_pod:etc/sawtooth/keys/" \
+      k8s::ctl cp "$TEMP_DIR/$from_pod/validator.pub" "$to_pod:etc/sawtooth/keys/" \
         -c validator
     return $?
   else
@@ -65,20 +68,20 @@ function unlabelNode() {
   log::info "Removing label $label from node $node"
   local neg_label
   neg_label="${label//=*/}-"
-  kubectl label node "$node" "$neg_label"
+  k8s::ctl label node "$node" "$neg_label"
 }
 
 function labelNode() {
   node=${1:?}
   label=${2:?}
   log::info "Removing label $label from node $node"
-  kubectl label node "$node" "$label"
+  k8s::ctl label node "$node" "$label"
 }
 
 function waitForPodTermination() {
   local pod=${1:?}
   log::info "Waiting for pod $pod to terminate"
-  while kubectl get pod "$pod" -o name >/dev/null 2>&1; do
+  while k8s::ctl get pod "$pod" -o name >/dev/null 2>&1; do
     sleep 5
     log::info "Waiting for pod $pod to terminate"
   done

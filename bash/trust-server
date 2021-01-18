@@ -1,11 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck source=includer.sh
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-# shellcheck source=include.sh
-source "$(dirname "${BASH_SOURCE[0]}")/include.sh"
+@include options
+@include log
+@include error
 
 source /etc/os-release
 
-addCliOptions
+options::standard
 options::description "Add the specified server's certificate chain to this\
  host's trust chain."
 options::add -o p -d "server port" -a -m -e PORT
@@ -26,17 +29,25 @@ fi
 
 TMPDIR=$(mktemp -d)
 
-cd "${TMPDIR}" || error_exit "Cannot cd to $TMPDIR"
+cd "${TMPDIR}" || error::exit "Cannot cd to $TMPDIR"
+
+function ::openssl {
+  $(commands::use openssl) "$@"
+}
+
+function ::sudo {
+  $(commands::use sudo) "$@"
+}
 
 log::info "Fetching certificates for $FQDN:$PORT"
-openssl s_client -showcerts -verify 5 \
+openssl::cmd s_client -showcerts -verify 5 \
   -connect "$FQDN:$PORT" </dev/null 2>/dev/null |
   awk '/BEGIN/,/END/{ if(/BEGIN/){a++}; out="cert"a".crt"; print >out}'
 
 log::info "Renaming certificates"
 find . -name "*.crt" | while read -r cert; do
   log::info "Rename $cert"
-  newname=$(openssl x509 -noout -subject -in "$cert" |
+  newname=$(::openssl x509 -noout -subject -in "$cert" |
     sed -n 's/^.*CN=\(.*\)$/\1/; s/[ ,.*]/_/g; s/__/_/g; s/^_//g;p').pem
   log::info "Renamed $cert to $newname"
   mv "$cert" "$newname"
@@ -48,17 +59,29 @@ function add-certs-amzn() {
       continue
     fi
     log::info "Copying $cert to /etc/pki/ca-trust/source/anchors/"
-    sudo cp "$cert" /etc/pki/ca-trust/source/anchors/
+    ::sudo cp "$cert" /etc/pki/ca-trust/source/anchors/
   done
   log::info "Updating CA-Trust"
-  sudo update-ca-trust extract
+  ::sudo update-ca-trust extract
+}
+
+function add-certs-ubuntu() {
+  for cert in *.pem; do
+    if [ "$cert" = "${_FQDN}.pem" ]; then
+      continue
+    fi
+    INFO "Copying $cert to /etc/ssl/certs"
+    ::sudo cp "$cert" /etc/ssl/certs
+  done
+  INFO "Updating CA-Trust"
+  ::sudo update-ca-certificates
 }
 
 case $ID in
   amzn)
     add-certs-amzn
     ;;
-  ubuntu)
+  ubuntu | pop)
     add-certs-ubuntu
     ;;
 esac

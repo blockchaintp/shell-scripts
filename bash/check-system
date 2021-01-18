@@ -1,9 +1,13 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 # shellcheck disable=SC1090
-source "$(dirname "$0")/include.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-addCliOptions
+@include options
+@include log
+@include commands
+@include error
+
+options::standard
 options::set_description "Checks either the local system or a list of ssh \
   targets for their system BIOS version and SGX driver."
 options::add -o u -d "use sudo" -x USE_SUDO
@@ -30,20 +34,20 @@ if [ "$USE_SSH" != "true" ]; then
 
   log::debug "${_cmd_prefix[*]} ${vendor_cmd[*]}"
   vendor=$("${_cmd_prefix[@]}" "${vendor_cmd[@]}") ||
-    error_exit "Failed to execute bios-vendor command"
+    error::exit "Failed to execute bios-vendor command"
   log::debug "${_cmd_prefix[*]} ${version_cmd[*]}"
   version=$("${_cmd_prefix[@]}" "${version_cmd[@]}") ||
-    error_exit "Failed to execute bios-version command"
+    error::exit "Failed to execute bios-version command"
   log::debug "${_cmd_prefix[*]} ${release_cmd[*]}"
   release=$("${_cmd_prefix[@]}" "${release_cmd[@]}") ||
-    error_exit "Failed to execute bios-release-date command"
+    error::exit "Failed to execute bios-release-date command"
   log::debug "${_cmd_prefix[*]} ${lsmod_cmd[*]}"
   mod_list=$("${_cmd_prefix[@]}" "${lsmod_cmd[@]}") ||
-    error_exit "Failed to execute lsmod command"
+    error::exit "Failed to execute lsmod command"
 
   if echo "$mod_list" | grep isgx; then
     log::debug "${driver_cmd[*]}"
-    driver=$("${driver_cmd[@]}") || error_exit "Failed to execute driver command"
+    driver=$("${driver_cmd[@]}") || error::exit "Failed to execute driver command"
   else
     log::warn "No ISGX driver loaded on ${host}"
     driver="(none)"
@@ -54,7 +58,7 @@ else
   for host in "$@"; do
     _cmd_prefix=()
     _cmd_postfix=()
-    _cmd_prefix=(ssh "$host")
+    _cmd_prefix=("$(commands::use ssh)" "$host")
     if [ "$USE_SUDO" = "true" ]; then
       _cmd_prefix+=(sudo -S bash -c \")
       _cmd_postfix=(\")
@@ -62,26 +66,29 @@ else
 
     log::debug "${_cmd_prefix[*]} ${vendor_cmd[*]} ${_cmd_postfix[*]}"
     vendor=$("${_cmd_prefix[@]}" "${vendor_cmd[@]}" "${_cmd_postfix[@]}") ||
-      error_exit "Failed to execute bios-vendor command"
+      error::exit "Failed to execute bios-vendor command"
     log::debug "${_cmd_prefix[*]} ${version_cmd[*]} ${_cmd_postfix[*]}"
     version=$("${_cmd_prefix[@]}" "${version_cmd[@]}" "${_cmd_postfix[@]}") ||
-      error_exit "Failed to execute bios-version command"
+      error::exit "Failed to execute bios-version command"
     log::debug "${_cmd_prefix[*]} ${release_cmd[*]} ${_cmd_postfix[*]}"
     release=$("${_cmd_prefix[@]}" "${release_cmd[@]}" "${_cmd_postfix[@]}") ||
-      error_exit "Failed to execute bios-release-date command"
+      error::exit "Failed to execute bios-release-date command"
     log::debug "${_cmd_prefix[*]} ${lsmod_cmd[*]} ${_cmd_postfix[*]}"
     mod_list=$("${_cmd_prefix[@]}" "${lsmod_cmd[@]}" "${_cmd_postfix[@]}") ||
-      error_exit "Failed to execute lsmod command"
+      error::exit "Failed to execute lsmod command"
 
     if echo "$mod_list" | grep -q isgx; then
       log::debug "${_cmd_prefix[*]} ${driver_cmd[*]} ${_cmd_postfix[*]}"
-      driver=$("${_cmd_prefix[@]}" "${driver_cmd[@]}" "${_cmd_postfix[@]}") || error_exit "Failed to execute driver command"
+      driver=$("${_cmd_prefix[@]}" "${driver_cmd[@]}" "${_cmd_postfix[@]}") ||
+        error::exit "Failed to execute driver command"
     else
       log::warn "No ISGX driver loaded on ${host}"
       driver="(none)"
     fi
 
-    log::info "host=${host} bios vendor=${vendor} version=${version} release=${release} driver=${driver}"
-    echo "host=${host} bios vendor=${vendor} version=${version} release=${release} driver=${driver}"
+    log::info "host=${host} bios vendor=${vendor} version=${version}\
+     release=${release} driver=${driver}"
+    echo "host=${host} bios vendor=${vendor} version=${version}\
+     release=${release} driver=${driver}"
   done
 fi

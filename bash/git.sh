@@ -1,27 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck source=includer.sh
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-src_name=include_$(sha256sum "${BASH_SOURCE[0]}" | awk '{print $1}')
-if [ -z "${!src_name}" ]; then
-  declare -g "$src_name=${src_name}"
-else
-  return
-fi
-
-# shellcheck source=doc.sh
-source "$(dirname "${BASH_SOURCE[0]}")/doc.sh"
-
-# dirs.sh must be co-resident with this file
-# shellcheck source=dirs.sh
-source "$(dirname "${BASH_SOURCE[0]}")/dirs.sh"
-DIR=$(dirs::of)
-
-# shellcheck source=annotations.sh
-source "$DIR/annotations.sh"
+@include doc
+@include commands
 
 @package git
 
+function git::cmd() {
+  $(commands::use git) "$@"
+}
+
 function git::tagsinhistory() {
-  git log --no-walk --pretty="%d" -n 100000 | grep "(tag" | awk '{print $2}' |
+  git::cmd log --no-walk --pretty="%d" -n 100000 | grep "(tag" | awk '{print $2}' |
     sed -e 's/)//' | awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }'
 }
 
@@ -41,17 +32,25 @@ function git::commits() {
   local from=$1
   local to=$2
   [ -z "$to" ] && to="HEAD"
-  git log "$from"..."$to" --pretty=format:'%h'
+  git::cmd log "$from"..."$to" --pretty=format:'%h'
 }
 
 function git::log_fromto() {
   local from=$1
   local to=$2
   [ -z "$to" ] && to="HEAD"
-  git log "$from"..."$to" --no-merges --pretty=format:"* %h %s"
+  git::cmd log "$from"..."$to" --no-merges --pretty=format:"* %h %s"
 }
 
 function git::files_changed() {
   local commit=$1
-  git diff-tree --no-commit-id --name-only -r "$commit" | sort
+  git::cmd diff-tree --no-commit-id --name-only -r "$commit" | sort
+}
+
+function git::describe() {
+  git::cmd describe "$@"
+}
+
+function git::dirty_version() {
+  echo "$(git::describe --tags 2>/dev/null)-dirty"
 }

@@ -1,22 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck source=includer.sh
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-# shellcheck source=doc.sh
-source "$(dirname "${BASH_SOURCE[0]}")/doc.sh"
-
-# dirs.sh must be co-resident with this file
-# shellcheck source=dirs.sh
-source "$(dirname "${BASH_SOURCE[0]}")/dirs.sh"
-DIR=$(dirs::of)
-
-# shellcheck source=annotations.sh
-source "$DIR/annotations.sh"
-
-# shellcheck source=bash-logger.sh
-source "$DIR/bash-logger.sh"
+@include doc
+@include annotations
+@include log
+@include fn
+@include commands
 
 @package k8s
 
-KUBECTL=${KUBECTL:-$(command -v kubectl)}
+function k8s::ctl() {
+  @doc Generic kubectl command
+  log::trace "fn::wrapped exec::capture $(commands::use kubectl) $*"
+  fn::wrapped exec::capture "$(commands::use kubectl)" "$@"
+}
 
 function k8s::exec() {
   @doc On pod "$1" in container "$2" execute the command provided
@@ -48,12 +46,6 @@ function kcp() {
   deprecated k8s::cp "$@"
 }
 
-function k8s::ctl() {
-  @doc Generic kubectl command
-  log::trace "fn::wrapped exec::capture $KUBECTL $*"
-  fn::wrapped exec::capture "$KUBECTL" "$@"
-}
-
 function k8s::get() {
   @doc get k8s resources
   k8s::ctl get "$@"
@@ -68,5 +60,22 @@ function k8s::get_containers_for_pod() {
   @doc get the list of container names for this pod
   local pod=${1:?}
   pod=${pod//pod\//}
-  k8s::get pod "${pod}" -o json | jq -r '.spec.containers[].name'
+  k8s::get pod "${pod}" -o json | $(commands::use jq) \
+    -r '.spec.containers[].name'
+}
+
+function k8s::config() {
+  k8s::ctl config "$@"
+}
+
+function k8s::describe() {
+  k8s::ctl describe "$@"
+}
+
+function k8s::current_ns() {
+  k8s::config view --minify --output 'jsonpath={..namespace}'
+}
+
+function k8s::current_cluster() {
+  k8s::config view --minify --output 'jsonpath={..context.cluster}'
 }

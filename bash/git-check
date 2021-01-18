@@ -1,7 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck disable=SC1090
-source "$(dirname "$0")/include.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
+
+@include options
+@include log
+@include exec
+@include git
 
 #shellcheck disable=SC2034
 LOGFILE_DISABLE=true
@@ -19,7 +24,7 @@ function set_client() {
   CLIENT="${1}"
 }
 
-addCliOptions
+options::standard
 options::description "Check all the repositories according to the\
  parameters and update keep them in sync with the origin if possible"
 options::add -o o -d "organization to scan" -a -m -f set_organization
@@ -42,24 +47,24 @@ for repo in $(find "$HOME/git/${BASE}${EXTRA}" -mindepth "${DEPTH}" -maxdepth "$
   replace_path="$HOME/git\/${BASE}"
   base_name=${repo//$replace_path/}
   orgname=$(dirname "$base_name")
-  branch_name=$(git symbolic-ref -q HEAD)
+  branch_name=$(git::cmd symbolic-ref -q HEAD)
   branch_name=${branch_name##refs/heads/}
   branch_name=${branch_name:-HEAD}
-  dirty_version=$(git describe --tags 2>/dev/null)-dirty
-  version=$(git describe --dirty --tags 2>/dev/null)
-  long_version=$(git describe --long --tags 2>/dev/null)
+  dirty_version=$(git::describe --tags 2>/dev/null)-dirty
+  version=$(git::describe --dirty --tags 2>/dev/null)
+  long_version=$(git::describe --long --tags 2>/dev/null)
 
   len=${#base_name}
   branch_len=${#branch_name}
   max_repo_len=$((len > max_repo_len ? len : max_repo_len))
   max_branch_len=$((branch_len > max_branch_len ? branch_len : max_branch_len))
-  status=$(git status --short | wc -l)
+  status=$(git::cmd status --short | wc -l)
   if [ "$status" = "0" ]; then
-    if git diff "remotes/origin/$branch_name" --quiet >/dev/null 2>&1; then
+    if git::cmd diff "remotes/origin/$branch_name" --quiet >/dev/null 2>&1; then
       log::info "Examining $base_name: up to date"
     else
       log::info "Examining $base_name: pulling"
-      exec::hide git pull
+      exec::hide git::cmd pull
     fi
   else
     log::info "Examining $base_name: dirty"
@@ -82,7 +87,7 @@ for repo in $(find "$HOME/git/${BASE}${EXTRA}" -mindepth "${DEPTH}" -maxdepth "$
     fi
   fi
   if [ -z "$version" ]; then
-    version=$(git rev-parse --short HEAD)
+    version=$(git::cmd rev-parse --short HEAD)
     UNCOMMITTED="${UNCOMMITTED}$base_name:$pr_count:$branch_name:$version,"
   elif [ "$version" = "$dirty_version" ]; then
     UNCOMMITTED="${UNCOMMITTED}$base_name:$pr_count:$branch_name:$version,"

@@ -1,20 +1,25 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck disable=SC1090
-source "$(dirname "$0")/include.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-addCliOptions
+@include options
+@include commands
+@include log
+@include k8s
+
+options::standard
 options::description "Fetch the logs for the containers into local files"
 options::add -o l -d "label of pod selector" -a -m -e selector
 options::add -o c -d "container whose logs to dump" -a -m -e container
 options::parse "$@"
 shift $((OPTIND - 1))
 
-get_pods_cmd=(kubectl get pods -l "$selector" -o json)
+get_pods_cmd=(k8s::ctl get pods -l "$selector" -o json)
 log::info "Fetching logs of pods for selector $selector container: ${container:?}"
 for pod in $("${get_pods_cmd[@]}" |
-  jq -r '.items[].metadata.name'); do
-  log_cmd=(kubectl logs "$pod" "--tail=10000" --timestamps)
+  $(commands::use jq) -r '.items[].metadata.name'); do
+  log_cmd=(k8s::ctl logs "$pod" "--tail=10000" --timestamps)
   if [ -n "$container" ]; then
     log::info "Fetching $container logs of pod $pod to $pod.$container.out"
     log_cmd+=(-c "$container")

@@ -1,21 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck source=includer.sh
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-src_name=include_$(sha256sum "${BASH_SOURCE[0]}" | awk '{print $1}')
-if [ -z "${!src_name}" ]; then
-  declare -g "$src_name=${src_name}"
-else
-  return
-fi
-
-# shellcheck source=doc.sh
-source "$(dirname "${BASH_SOURCE[0]}")/doc.sh"
+@include doc
+@include log
+@include error
 
 @package dirs
-
-function _error_exit() {
-  log::error "$*"
-  exit 1
-}
 
 function dirs::of() {
   @doc Return the directory of the calling script
@@ -65,7 +56,7 @@ function dirs::replace {
   log::notice "This command will replace the contents of ${1}"
   if [ -d "$directory" ]; then
     if ! dirs::safe_rmrf "$directory"; then
-      _error_exit "Failed to remove $directory"
+      error::exit "Failed to remove $directory"
     fi
   fi
   dirs::ensure "$directory"
@@ -81,5 +72,5 @@ function dirs::noreplace {
 function dirs::ensure {
   local directory=${1:?}
   mkdir -p "${directory}" ||
-    _error_exit "Failed to create ${directory}"
+    error::exit "Failed to create ${directory}"
 }

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 alias ku='kubectl config use-context'
 alias kc='kubectl config set-context --current'
