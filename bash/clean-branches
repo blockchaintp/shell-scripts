@@ -12,7 +12,7 @@ options::standard
 options::set_description "Cleans the target directory of branches which have \
   lost their remote counterparts."
 options::add -o d -d "target directory" -a -e TARGET_DIR
-options::parse "$@"
+options::parse_available "$@"
 
 # globals
 TARGET_DIR="${TARGET_DIR:-$(pwd)}"
