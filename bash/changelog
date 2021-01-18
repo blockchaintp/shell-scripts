@@ -2,8 +2,8 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include options
-include git
+@include options
+@include git
 
 options::standard
 options::add -o l -d "add hyperlinks to commits" -x ADD_LINKS

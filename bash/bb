@@ -2,8 +2,8 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include commands
-include options
+@include commands
+@include options
 
 options::standard
 options::add -o c -d "Config file for BB rest api" -a -m -e CONFIG

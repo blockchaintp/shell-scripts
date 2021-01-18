@@ -2,9 +2,9 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include options
-include bash-logger
-include commands
+@include options
+@include log
+@include commands
 
 options::standard
 options::set_description "Checks either the local system or a list of ssh \

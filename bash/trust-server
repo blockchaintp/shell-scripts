@@ -2,8 +2,8 @@
 # shellcheck source=includer.sh
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include options
-include bash-logger
+@include options
+@include log
 
 source /etc/os-release
 

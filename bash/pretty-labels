@@ -2,8 +2,8 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include options.sh
-include k8s.sh
+@include options
+@include k8s
 
 options::standard
 options::description "prints out the resource name followed by its labels, one\

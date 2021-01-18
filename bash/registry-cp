@@ -2,9 +2,9 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include options.sh
-include exec.sh
-include docker.sh
+@include options
+@include exec
+@include docker
 
 options::standard
 options::description "Copy an image from one registry to another."

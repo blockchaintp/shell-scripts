@@ -2,9 +2,9 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include options
-include bash-logger
-include git
+@include options
+@include log
+@include git
 
 options::standard
 options::description "Add a new tag to the repository based on semver and\

@@ -2,8 +2,8 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include options.sh
-include bash-logger.sh
+@include options
+@include log
 
 options::standard
 options::description "A makeshift minimal CI system. It watches a directory for\

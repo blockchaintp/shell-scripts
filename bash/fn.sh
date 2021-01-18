@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# shellcheck source=doc.sh
+# shellcheck source=includer.sh
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include doc.sh
-include annotations.sh
+@include doc
+@include annotations
 
 @package fn
 

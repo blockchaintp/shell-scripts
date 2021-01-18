@@ -1,23 +1,19 @@
 #!/usr/bin/env bash
-# shellcheck source=doc.sh
+# shellcheck source=includer.sh
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include doc.sh
+@include doc
+@include log
 
 @package options
 
-OPTIONS=()
-declare -A OPTIONS_DOC
-declare -A OPTIONS_OPTIONAL
-declare -A OPTIONS_HAS_ARGS
-declare -A OPTIONS_PARSE_FUNCS
-declare -A OPTIONS_ENVIRONMENT
-OPTIONS_DOC=()
-OPTIONS_OPTIONAL=()
-OPTIONS_HAS_ARGS=()
-OPTIONS_PARSE_FUNCS=()
-OPTIONS_ENVIRONMENT=()
-OPTIONS_DESCRIPTION=""
+declare -g -a OPTIONS
+declare -g -A OPTIONS_DOC
+declare -g -A OPTIONS_OPTIONAL
+declare -g -A OPTIONS_HAS_ARGS
+declare -g -A OPTIONS_PARSE_FUNCS
+declare -g -A OPTIONS_ENVIRONMENT
+declare -g OPTIONS_DESCRIPTION
 
 function options::syntax_exit() {
   options::help "$(basename "${BASH_SOURCE[2]}")"
@@ -59,6 +55,7 @@ function options::description() {
 
 function options::add() {
   @doc add an option to the current configuration
+  local option=""
   local argument="false"
   local optional="true"
   local description="no description"
@@ -205,7 +202,7 @@ function options::getopts() {
 }
 
 function options::standard() {
-  options::add -o v -d "set verbosity level" -f log-level
+  options::add -o v -d "set verbosity level" -f log::level_increase
 }
 
 function options::parse() {

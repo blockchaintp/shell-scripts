@@ -3,10 +3,9 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include options.sh
-include bash-logger.sh
-include k8s.sh
-export LOGFILE_DISABLE="true"
+@include options
+@include log
+@include k8s
 
 options::standard
 options::description "Extract a useful collection of support information from a\

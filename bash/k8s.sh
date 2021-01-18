@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# shellcheck source=doc.sh
+# shellcheck source=includer.sh
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include doc.sh
-include annotations
-include bash-logger
-include fn
-include commands
+@include doc
+@include annotations
+@include log
+@include fn
+@include commands
 
 @package k8s
 

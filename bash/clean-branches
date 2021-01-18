@@ -2,10 +2,10 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include options
-include bash-logger
-include git
-include exec
+@include options
+@include log
+@include git
+@include exec
 
 options::standard
 options::set_description "Cleans the target directory of branches which have \

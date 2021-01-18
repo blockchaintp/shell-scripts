@@ -2,9 +2,9 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-include options.sh
-include k8s.sh
-include bash-logger.sh
+@include options
+@include k8s
+@include log
 
 options::standard
 options::description "Migrate the keys from one validator to another."
