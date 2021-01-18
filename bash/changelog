@@ -16,11 +16,20 @@ function ::fromto() {
   from=${1:?}
   to=${2:?}
   base_url=${3}
+  local c_count
+  c_count=$(git::cmd log "$from"..."$to" --no-merges --pretty=format:"%s" |
+    wc -c)
+  if [ "$c_count" -eq 0 ]; then
+    return
+  fi
   if [ "$ADD_LINKS" = "true" ] && [ -n "$base_url" ]; then
-    git::cmd log "$from"..."$to" --no-merges --pretty=format:"* %s [view commit]($base_url/%H)"
+    git::cmd log "$from"..."$to" --no-merges \
+      --pretty=format:"* %s [view commit]($base_url/%H)"
   else
     git::cmd log "$from"..."$to" --no-merges --pretty=format:"* %s"
   fi
+  echo
+  echo
 }
 
 function ::full() {
@@ -35,15 +44,11 @@ function ::full() {
         echo "## $this_version"
         echo
         ::fromto "$tag" "HEAD" "$(git::projecturl)"
-        echo
-        echo
       fi
     else
       echo "## $later_tag"
       echo
       ::fromto "$tag" "$later_tag" "$(git::projecturl)"
-      echo
-      echo
       later_tag="$tag"
     fi
   done
