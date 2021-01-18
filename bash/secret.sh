@@ -25,8 +25,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
 declare -g -A SECRETS
 declare -g -A SECRETS_FILES
+declare -g -a SECRET_TMPFILES
 
 function secret::register_env {
+  @doc Register a secret under the provided name
+  @arg _1_ the secret name
+  @arg _2_ optional - the name of a different env var containing the secret val
+  set +x
   local varName=${1:?}
   local targetVar=$2
   if [ -z "$targetVar" ]; then
@@ -39,6 +44,10 @@ function secret::register_env {
 }
 
 function secret::register_file {
+  @doc Register a secret in the specified file under the provided name
+  @arg _1_ the secret name
+  @arg _2_ the file containing the secret
+  set +x
   local varName=${1:?}
   local file=${2:?}
   SECRETS[$varName]="file"
@@ -76,6 +85,8 @@ function secret::exists {
 }
 
 function secret::must_exist {
+  @doc Verify a secret exists or exit with error
+  @arg _1_ name of the secret
   local secretName=${1:?}
   if ! secret::exists "$secretName"; then
     error::exit "No such secret $secretName"
@@ -83,14 +94,17 @@ function secret::must_exist {
 }
 
 function secret::as_file {
+  @doc Render the named secret as a temporary file and return the name
+  @arg _1_ name of the secret
+  set +x
   local secretName=${1:?}
   secret::must_exist "$secretName"
   case "${SECRETS[$secretName]}" in
     environment)
-      secret::env_as_file "$secretName"
+      _env_as_file "$secretName"
       ;;
     file)
-      secret::file_as_file "$secretName"
+      _file_as_file "$secretName"
       ;;
     *)
       return 1
@@ -98,15 +112,25 @@ function secret::as_file {
   esac
 }
 
-function secret::file_as_file {
+function _file_as_file {
+  set +x
   local secretName=${1:?}
   printf "%s" "${SECRETS_FILES[$secretName]}"
 }
 
-function secret::env_as_file {
+function _env_as_file {
+  set +x
   local secretName=${1:?}
   local tmpFile
   tmpFile=$(mktemp)
+  SECRET_TMPFILES+=("$tmpFile")
   (printenv "$secretName") >"$tmpFile"
   echo "$tmpFile"
+}
+
+function secret::clear {
+  @doc "Clear secret temprary files."
+  if [ -n "${SECRET_TMPFILES[0]}" ]; then
+    rm -f "${SECRET_TMPFILES[@]}"
+  fi
 }
