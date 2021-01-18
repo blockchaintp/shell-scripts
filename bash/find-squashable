@@ -2,11 +2,11 @@
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-@include options
 @include git
+@include options
 
 options::standard
-options::description "Find consecutive commits against the same file set and \
+options::description "Find consecutive commits against the same file set and\
   list them"
 options::add -o s -d "start from" -a -m -e START_FROM
 options::add -o e -d "end at" -a -e END_AT
