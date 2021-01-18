@@ -5,6 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 @include options
 @include git
 @include log
+@include dirs
 
 options::standard
 options::description "Add a new tag to the repository based on semver and\
@@ -30,14 +31,14 @@ log::notice "$LATEST_VERSION $CHANGES changes  $BREAKING_CHANGES breaks"
 skip="true"
 if [ "$BREAKING_CHANGES" -gt 0 ]; then
   if [ "${ALLOW_BREAKING}" = "true" ]; then
-    TAG=$("${DIR}/semver" bump minor "$LATEST_VERSION")
+    TAG=$("$(dirs::of)/semver" bump minor "$LATEST_VERSION")
     skip="false"
   else
     log::warn "Minor version changes due to breaking changes must be explicity allowed!"
     exit 1
   fi
 elif [ "$CHANGES" -gt 0 ]; then
-  TAG=$("${DIR}/semver" bump patch "$LATEST_VERSION")
+  TAG=$("$(dirs::of)/semver" bump patch "$LATEST_VERSION")
   skip="false"
 else
   TAG="$LATEST_VERSION"
