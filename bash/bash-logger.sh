@@ -56,7 +56,7 @@ function log::level() {
   fi
   LOG_LEVEL=$level
 }
-log::level 0
+log::level "$LOG_LEVEL"
 
 TRACE() {
   deprecated log::trace "$@"
