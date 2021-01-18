@@ -5,6 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 @include options
 @include log
 @include commands
+@include error
 
 options::standard
 options::set_description "Checks either the local system or a list of ssh \
@@ -33,20 +34,20 @@ if [ "$USE_SSH" != "true" ]; then
 
   log::debug "${_cmd_prefix[*]} ${vendor_cmd[*]}"
   vendor=$("${_cmd_prefix[@]}" "${vendor_cmd[@]}") ||
-    error_exit "Failed to execute bios-vendor command"
+    error::exit "Failed to execute bios-vendor command"
   log::debug "${_cmd_prefix[*]} ${version_cmd[*]}"
   version=$("${_cmd_prefix[@]}" "${version_cmd[@]}") ||
-    error_exit "Failed to execute bios-version command"
+    error::exit "Failed to execute bios-version command"
   log::debug "${_cmd_prefix[*]} ${release_cmd[*]}"
   release=$("${_cmd_prefix[@]}" "${release_cmd[@]}") ||
-    error_exit "Failed to execute bios-release-date command"
+    error::exit "Failed to execute bios-release-date command"
   log::debug "${_cmd_prefix[*]} ${lsmod_cmd[*]}"
   mod_list=$("${_cmd_prefix[@]}" "${lsmod_cmd[@]}") ||
-    error_exit "Failed to execute lsmod command"
+    error::exit "Failed to execute lsmod command"
 
   if echo "$mod_list" | grep isgx; then
     log::debug "${driver_cmd[*]}"
-    driver=$("${driver_cmd[@]}") || error_exit "Failed to execute driver command"
+    driver=$("${driver_cmd[@]}") || error::exit "Failed to execute driver command"
   else
     log::warn "No ISGX driver loaded on ${host}"
     driver="(none)"
@@ -65,21 +66,21 @@ else
 
     log::debug "${_cmd_prefix[*]} ${vendor_cmd[*]} ${_cmd_postfix[*]}"
     vendor=$("${_cmd_prefix[@]}" "${vendor_cmd[@]}" "${_cmd_postfix[@]}") ||
-      error_exit "Failed to execute bios-vendor command"
+      error::exit "Failed to execute bios-vendor command"
     log::debug "${_cmd_prefix[*]} ${version_cmd[*]} ${_cmd_postfix[*]}"
     version=$("${_cmd_prefix[@]}" "${version_cmd[@]}" "${_cmd_postfix[@]}") ||
-      error_exit "Failed to execute bios-version command"
+      error::exit "Failed to execute bios-version command"
     log::debug "${_cmd_prefix[*]} ${release_cmd[*]} ${_cmd_postfix[*]}"
     release=$("${_cmd_prefix[@]}" "${release_cmd[@]}" "${_cmd_postfix[@]}") ||
-      error_exit "Failed to execute bios-release-date command"
+      error::exit "Failed to execute bios-release-date command"
     log::debug "${_cmd_prefix[*]} ${lsmod_cmd[*]} ${_cmd_postfix[*]}"
     mod_list=$("${_cmd_prefix[@]}" "${lsmod_cmd[@]}" "${_cmd_postfix[@]}") ||
-      error_exit "Failed to execute lsmod command"
+      error::exit "Failed to execute lsmod command"
 
     if echo "$mod_list" | grep -q isgx; then
       log::debug "${_cmd_prefix[*]} ${driver_cmd[*]} ${_cmd_postfix[*]}"
       driver=$("${_cmd_prefix[@]}" "${driver_cmd[@]}" "${_cmd_postfix[@]}") ||
-        error_exit "Failed to execute driver command"
+        error::exit "Failed to execute driver command"
     else
       log::warn "No ISGX driver loaded on ${host}"
       driver="(none)"

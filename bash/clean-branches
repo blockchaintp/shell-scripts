@@ -6,6 +6,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 @include log
 @include git
 @include exec
+@include error
 
 options::standard
 options::set_description "Cleans the target directory of branches which have \
@@ -17,10 +18,10 @@ options::parse "$@"
 TARGET_DIR="${TARGET_DIR:-$(pwd)}"
 
 if [ ! -d "$TARGET_DIR/.git" ]; then
-  error_exit "$TARGET_DIR is not the root of a git repository"
+  error::exit "$TARGET_DIR is not the root of a git repository"
 fi
 
-cd "$TARGET_DIR" || error_exit "Failed to cd to $TARGET_DIR, check permissions"
+cd "$TARGET_DIR" || error::exit "Failed to cd to $TARGET_DIR, check permissions"
 
 log::info "Fetching for repository $TARGET_DIR"
 exec::capture git::cmd fetch -p

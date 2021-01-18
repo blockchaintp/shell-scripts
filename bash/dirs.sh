@@ -4,13 +4,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
 @include doc
 @include log
+@include error
 
 @package dirs
-
-function _error_exit() {
-  log::error "$*"
-  exit 1
-}
 
 function dirs::of() {
   @doc Return the directory of the calling script
@@ -60,7 +56,7 @@ function dirs::replace {
   log::notice "This command will replace the contents of ${1}"
   if [ -d "$directory" ]; then
     if ! dirs::safe_rmrf "$directory"; then
-      _error_exit "Failed to remove $directory"
+      error::exit "Failed to remove $directory"
     fi
   fi
   dirs::ensure "$directory"
@@ -76,5 +72,5 @@ function dirs::noreplace {
 function dirs::ensure {
   local directory=${1:?}
   mkdir -p "${directory}" ||
-    _error_exit "Failed to create ${directory}"
+    error::exit "Failed to create ${directory}"
 }

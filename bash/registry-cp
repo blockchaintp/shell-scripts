@@ -5,6 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 @include options
 @include exec
 @include docker
+@include error
 
 options::standard
 options::description "Copy an image from one registry to another."
@@ -15,11 +16,11 @@ options::add -o t -d "target repo" -a -m -e ARTIFACTORY
 options::parse "$@"
 
 exec::capture docker::cmd pull "$HOST/$IMAGE:$VERSION" ||
-  error_exit "Failed to pull $HOST/$IMAGE:$VERSION"
+  error::exit "Failed to pull $HOST/$IMAGE:$VERSION"
 
 exec::capture docker::cmd tag "$HOST/$IMAGE:$VERSION" \
   "$ARTIFACTORY/$IMAGE:$VERSION" ||
-  error_exit "Failed to tag $ARTIFACTORY/$IMAGE:$VERSION"
+  error::exit "Failed to tag $ARTIFACTORY/$IMAGE:$VERSION"
 
 exec::capture docker::cmd push "$ARTIFACTORY/$IMAGE:$VERSION" ||
-  error_exit "Failed to push $ARTIFACTORY/$IMAGE:$VERSION"
+  error::exit "Failed to push $ARTIFACTORY/$IMAGE:$VERSION"

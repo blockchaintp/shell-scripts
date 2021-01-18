@@ -4,6 +4,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
 @include options
 @include log
+@include error
 
 source /etc/os-release
 
@@ -28,7 +29,7 @@ fi
 
 TMPDIR=$(mktemp -d)
 
-cd "${TMPDIR}" || error_exit "Cannot cd to $TMPDIR"
+cd "${TMPDIR}" || error::exit "Cannot cd to $TMPDIR"
 
 function ::openssl {
   $(commands::use openssl) "$@"

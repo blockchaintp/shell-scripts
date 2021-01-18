@@ -3,6 +3,7 @@
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
 @include commands
+@include error
 @include options
 
 options::standard
@@ -13,7 +14,7 @@ shift $((OPTIND - 1))
 if [ -n "$CONFIG" ] && [ -r "$HOME/.${CONFIG}-config" ]; then
   source "$HOME/.${CONFIG}-config"
 else
-  error_exit "Specified config($CONFIG) was not found"
+  error::exit "Specified config($CONFIG) was not found"
 fi
 
 function ::curl() {
