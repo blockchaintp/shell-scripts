@@ -63,3 +63,19 @@ function k8s::get_containers_for_pod() {
   k8s::get pod "${pod}" -o json | $(commands::use jq) \
     -r '.spec.containers[].name'
 }
+
+function k8s::config() {
+  k8s::ctl config "$@"
+}
+
+function k8s::describe() {
+  k8s::ctl describe "$@"
+}
+
+function k8s::current_ns() {
+  k8s::config view --minify --output 'jsonpath={..namespace}'
+}
+
+function k8s::current_cluster() {
+  k8s::config view --minify --output 'jsonpath={..context.cluster}'
+}
