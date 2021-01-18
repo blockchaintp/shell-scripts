@@ -7,7 +7,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
 options::standard
 options::add -o l -d "add hyperlinks to commits" -x ADD_LINKS
-options::parse "$@"
+options::parse_available "$@"
 
 export GIT_PAGER=cat
 

@@ -11,10 +11,13 @@ options::standard
 options::description "Extract a useful collection of support information from a\
  kubernetes namespace and tar it up"
 options::add -o n -d "namespace to target" -a -e NAMESPACE
-options::add -o o -d "output directory" -a -m -e OUT_DIR
-options::parse "$@"
+options::add -o o -d "output directory" -a -e OUT_DIR
+options::parse_available "$@"
 shift $((OPTIND - 1))
 
+if [ -z "${OUT_DIR}" ]; then
+  OUT_DIR=$(mktemp -d)
+fi
 if [ -z "${NAMESPACE}" ]; then
   ns=$(k8s::current_ns)
   if [ -z "$ns" ]; then

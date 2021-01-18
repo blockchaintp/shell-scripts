@@ -13,7 +13,7 @@ options::set_description "Checks either the local system or a list of ssh \
 options::add -o u -d "use sudo" -x USE_SUDO
 options::add -o s -d "use ssh" -x USE_SSH
 options::add -o l -d "run locally" -x RUN_LOCALLY
-options::parse "$@"
+options::parse_available "$@"
 shift $((OPTIND - 1))
 
 _dmidecode=(/sbin/dmidecode)
