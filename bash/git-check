@@ -63,11 +63,11 @@ for repo in $(find "$HOME/git/${BASE}${EXTRA}" -mindepth "${DEPTH}" -maxdepth "$
     if git::cmd diff "remotes/origin/$branch_name" --quiet >/dev/null 2>&1; then
       log::info "Examining $base_name: up to date"
     else
-      log::info "Examining $base_name: pulling"
+      log::notice "Examining $base_name: pulling"
       exec::hide git::cmd pull
     fi
   else
-    log::info "Examining $base_name: dirty"
+    log::notice "Examining $base_name: dirty"
   fi
   pr_count='.'
   if command -v gh >/dev/null; then
