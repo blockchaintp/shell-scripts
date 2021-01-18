@@ -9,9 +9,14 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
 function exec::capture() {
   @doc Execute the provided command and capture the output to a log
-  local logfile=${LOGFILE:-"exec.log"}
-  "$@" 2>&1 | tee -a "$logfile"
-  exit_code=${PIPESTATUS[0]}
+  if [ -n "$LOGFILE_DISABLE" ]; then
+    local logfile=${LOGFILE:-"exec.log"}
+    "$@" 2>&1 | tee -a "$logfile"
+    exit_code=${PIPESTATUS[0]}
+  else
+    "$@" 2>&1
+    exit_code=$?
+  fi
   # shellcheck disable=SC2086
   return ${exit_code}
 }
