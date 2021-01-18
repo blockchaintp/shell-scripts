@@ -3,6 +3,7 @@
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
 @include dirs
+@include exec
 @include k8s
 @include log
 @include options
@@ -63,6 +64,13 @@ function logs {
         >"${OUT_DIR_LOGS}/$pod/$container-current.log"
       k8s::log "$pod" -c "$container" --timestamps \
         -p >"${OUT_DIR_LOGS}/$pod/$container-previous.log" 2>/dev/null || true
+      if [ "$container" = "validator" ]; then
+        log::notice "$pod container \"$container\" pulling extra logs"
+        pod_sname=$(echo "$pod" | awk -F/ '{print $NF}')
+        exec::hide k8s::cp -c "$container" \
+          "$pod_sname:/var/log/sawtooth/validator-debug.log" \
+          "${OUT_DIR_LOGS}/$pod/validator-debug.log"
+      fi
     done
   done
 }
