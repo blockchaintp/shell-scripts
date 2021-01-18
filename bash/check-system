@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-
 # shellcheck disable=SC1090
-source "$(dirname "$0")/include.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-addCliOptions
+include options
+include bash-logger
+include commands
+
+options::standard
 options::set_description "Checks either the local system or a list of ssh \
   targets for their system BIOS version and SGX driver."
 options::add -o u -d "use sudo" -x USE_SUDO
@@ -54,7 +57,7 @@ else
   for host in "$@"; do
     _cmd_prefix=()
     _cmd_postfix=()
-    _cmd_prefix=(ssh "$host")
+    _cmd_prefix=("$(commands::use ssh)" "$host")
     if [ "$USE_SUDO" = "true" ]; then
       _cmd_prefix+=(sudo -S bash -c \")
       _cmd_postfix=(\")
@@ -75,13 +78,16 @@ else
 
     if echo "$mod_list" | grep -q isgx; then
       log::debug "${_cmd_prefix[*]} ${driver_cmd[*]} ${_cmd_postfix[*]}"
-      driver=$("${_cmd_prefix[@]}" "${driver_cmd[@]}" "${_cmd_postfix[@]}") || error_exit "Failed to execute driver command"
+      driver=$("${_cmd_prefix[@]}" "${driver_cmd[@]}" "${_cmd_postfix[@]}") ||
+        error_exit "Failed to execute driver command"
     else
       log::warn "No ISGX driver loaded on ${host}"
       driver="(none)"
     fi
 
-    log::info "host=${host} bios vendor=${vendor} version=${version} release=${release} driver=${driver}"
-    echo "host=${host} bios vendor=${vendor} version=${version} release=${release} driver=${driver}"
+    log::info "host=${host} bios vendor=${vendor} version=${version}\
+     release=${release} driver=${driver}"
+    echo "host=${host} bios vendor=${vendor} version=${version}\
+     release=${release} driver=${driver}"
   done
 fi

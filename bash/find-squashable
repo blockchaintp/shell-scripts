@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-
 # shellcheck disable=SC1090
-source "$(dirname "$0")/include.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-addCliOptions
+include options
+include git
+
+options::standard
 options::description "Find consecutive commits against the same file set and \
   list them"
 options::add -o s -d "start from" -a -m -e START_FROM

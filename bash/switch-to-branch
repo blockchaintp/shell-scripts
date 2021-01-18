@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-
 # shellcheck disable=SC1090
-source "$(dirname "$0")/include.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-addCliOptions
+include options
+include bash-logger
+include exec
+include git
+
+options::standard
 options::description "Switch all of the the branch of all of the target\
  repositories to the specified branch"
 options::add -o c -d "client repository set" -a -e CLIENT
@@ -26,7 +30,7 @@ for d in "$TARGET_DIR"/*; do
       log::warn "Cannot cd to $d"
       continue
     fi
-    if exec::hide git checkout -b "$BRANCH" "$@"; then
+    if exec::hide git::cmd checkout -b "$BRANCH" "$@"; then
       log::info "Checked out $BRANCH in $d"
     else
       log::warn "Failed to checkout branch $BRANCH in $d"

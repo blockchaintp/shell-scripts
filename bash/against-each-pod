@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
+# shellcheck source=doc.sh
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
+
+include k8s
+include commands
 
 LABEL=$1
 shift
 COMMAND=$1
 shift
 clear
-for pod in $(kubectl get pods -l "$LABEL" | grep -v Terminat | grep -v NAME | awk '{print $1}' | sort); do
-  node_name=$(kubectl get pod "$pod" -o json | jq -r '.spec.nodeName')
+for pod in $(k8s::ctl get pods -l "$LABEL" | grep -v Terminat |
+  grep -v NAME | awk '{print $1}' | sort); do
+  node_name=$(k8s::ctl get pod "$pod" -o json |
+    $(commands::use jq) -r '.spec.nodeName')
   echo "=== $node_name $pod ==="
-  kubectl "$COMMAND" "pod/$pod" "$@"
+  k8s::ctl "$COMMAND" "pod/$pod" "$@"
   echo
 done

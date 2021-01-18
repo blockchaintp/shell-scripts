@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-
 # shellcheck source=doc.sh
-source "$(dirname "${BASH_SOURCE[0]}")/doc.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
+
+include doc.sh
 
 @package options
 
@@ -201,6 +202,10 @@ function options::help() {
 function options::getopts() {
   @doc run getops for the options specification
   getopts "$(options::spec)" "$@"
+}
+
+function options::standard() {
+  options::add -o v -d "set verbosity level" -f log-level
 }
 
 function options::parse() {

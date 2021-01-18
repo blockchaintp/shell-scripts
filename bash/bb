@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-
 # shellcheck disable=SC1090
-source "$(dirname "$0")/include.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-addCliOptions
+include commands
+include options
+
+options::standard
 options::add -o c -d "Config file for BB rest api" -a -m -e CONFIG
-
 options::parse "$@"
 
 shift $((OPTIND - 1))
@@ -15,11 +16,15 @@ else
   error_exit "Specified config($CONFIG) was not found"
 fi
 
+function ::curl() {
+  $(commands::use curl) "$@"
+}
+
 function bb_api_call() {
   local method=$1
   local url=$2
   shift 2
-  curl -s -X "$method" -u "$BB_USER:$BB_PAT" \
+  ::curl -s -X "$method" -u "$BB_USER:$BB_PAT" \
     "$BB_HOST/rest/api/latest/$url" "$@" | jq
 }
 

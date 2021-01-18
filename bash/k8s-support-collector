@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 
 # shellcheck disable=SC1090
-source "$(dirname "$0")/include.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
+
+include options.sh
+include bash-logger.sh
+include k8s.sh
 export LOGFILE_DISABLE="true"
 
-addCliOptions
+options::standard
 options::description "Extract a useful collection of support information from a\
  kubernetes namespace and tar it up"
 options::add -o n -d "namespace to target" -a -e NAMESPACE

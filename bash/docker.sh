@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-
-src_name=include_$(sha256sum "${BASH_SOURCE[0]}" | awk '{print $1}')
-if [ -z "${!src_name}" ]; then
-  declare -g "$src_name=${src_name}"
-else
-  return
-fi
-
 # shellcheck source=doc.sh
-source "$(dirname "${BASH_SOURCE[0]}")/doc.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
+
+include doc
+include commands
+include bash-logger
 
 @package docker
+
+function docker::cmd() {
+  $(commands::use docker) "$@"
+}
 
 function docker::pull() {
   @doc pull the specified image
   @arg _1_ the full image url to pull
   local image=${1:?}
   log::info "Pulling $image"
-  exec::hide docker pull -q "$image"
+  exec::hide docker::cmd pull -q "$image"
 }
 
 function docker::tag() {
@@ -26,7 +26,7 @@ function docker::tag() {
   @arg _2_ the desired final url
   local from=${1:?}
   local to=${2:?}
-  exec::hide docker tag "$from" "$to"
+  exec::hide docker::cmd tag "$from" "$to"
 }
 
 function docker::push() {
@@ -34,7 +34,7 @@ function docker::push() {
   @arg _1_ the full image url to push
   local image=${1:?}
   log::info "Pushing $image"
-  exec::hide docker push "$image"
+  exec::hide docker::cmd push "$image"
 }
 
 function docker::cp() {

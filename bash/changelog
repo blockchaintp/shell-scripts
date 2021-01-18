@@ -1,27 +1,29 @@
 #!/usr/bin/env bash
-
 # shellcheck disable=SC1090
-source "$(dirname "$0")/include.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-addCliOptions
+include options
+include git
+
+options::standard
 options::add -o l -d "add hyperlinks to commits" -x ADD_LINKS
 options::parse "$@"
 
 export GIT_PAGER=cat
 
-function changelog::fromto() {
+function ::fromto() {
   local from to base_url
   from=${1:?}
   to=${2:?}
   base_url=${3}
   if [ "$ADD_LINKS" = "true" ] && [ -n "$base_url" ]; then
-    git log "$from"..."$to" --no-merges --pretty=format:"* %s [view commit]($base_url/%H)"
+    git::cmd log "$from"..."$to" --no-merges --pretty=format:"* %s [view commit]($base_url/%H)"
   else
-    git log "$from"..."$to" --no-merges --pretty=format:"* %s"
+    git::cmd log "$from"..."$to" --no-merges --pretty=format:"* %s"
   fi
 }
 
-function changelog::full() {
+function ::full() {
   local later_tag=
   echo "# CHANGELOG"
   echo
@@ -32,14 +34,14 @@ function changelog::full() {
       if [ "$this_version" != "$tag" ]; then
         echo "## $this_version"
         echo
-        changelog::fromto "$tag" "HEAD" "$(git::projecturl)"
+        ::fromto "$tag" "HEAD" "$(git::projecturl)"
         echo
         echo
       fi
     else
       echo "## $later_tag"
       echo
-      changelog::fromto "$tag" "$later_tag" "$(git::projecturl)"
+      ::fromto "$tag" "$later_tag" "$(git::projecturl)"
       echo
       echo
       later_tag="$tag"
@@ -47,4 +49,4 @@ function changelog::full() {
   done
 }
 
-changelog::full
+::full

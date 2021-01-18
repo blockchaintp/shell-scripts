@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-
 # shellcheck disable=SC1090
-source "$(dirname "$0")/include.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
-addCliOptions
+include options.sh
+include bash-logger.sh
+include commands.sh
+include k8s.sh
+
+options::standard
 options::description "Opens a tmux session with panels for each of the pods\
  and containers specified running the provided command."
 options::add -o l -d "label to select for the console" -a -m -e LABEL
@@ -13,26 +17,31 @@ shift $((OPTIND - 1))
 
 SESSION=$LABEL
 
-if tmux has-session -t "$SESSION"; then
+function tmux::cmd {
+  $(commands::use tmux) "$@"
+}
+
+if tmux::cmd has-session -t "$SESSION"; then
   log::debug "Switch to session $SESSION"
-  tmux switch-client -t "$SESSION"
+  tmux::cmd switch-client -t "$SESSION"
 else
   log::debug "Create session $SESSION"
-  tmux new-session -s "$SESSION" -d
+  tmux::cmd new-session -s "$SESSION" -d
 fi
 WINDOW=$LABEL-$RANDOM
 log::debug "Create and select window $WINDOW"
-tmux new-window -n "$WINDOW"
-tmux select-window -t "$WINDOW"
+tmux::cmd new-window -n "$WINDOW"
+tmux::cmd select-window -t "$WINDOW"
 count=0
-for pod in $(kubectl get pods -l "$LABEL" | grep -v Terminat | grep -v NAME | awk '{print $1}' | sort); do
+for pod in $(k8s::ctl get pods -l "$LABEL" | grep -v Terminat | grep -v NAME |
+  awk '{print $1}' | sort); do
   if [ "$count" -gt 0 ]; then
     log::debug "Split window on session $SESSION"
-    tmux split-window -v -t "$SESSION"
+    tmux::cmd split-window -v -t "$SESSION"
   fi
-  log::debug "Execute on $SESSION: kubectl $COMMAND pod/$pod $*"
-  tmux send-keys -t "$SESSION" "kubectl $COMMAND pod/$pod $*" C-m
+  log::debug "Execute on $SESSION: $(commands::use kubectl) $COMMAND pod/$pod $*"
+  tmux::cmd send-keys -t "$SESSION" "$(commands::use kubectl) $COMMAND pod/$pod $*" C-m
   log::debug "Tile window $WINDOW"
-  tmux select-layout tiled
+  tmux::cmd select-layout tiled
   count=$((count + 1))
 done
