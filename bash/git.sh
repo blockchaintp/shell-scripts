@@ -12,8 +12,10 @@ function git::cmd() {
 }
 
 function git::tagsinhistory() {
-  git::cmd log --no-walk --pretty="%d" -n 100000 | grep "(tag" | awk '{print $2}' |
-    sed -e 's/)//' | awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }'
+  git::cmd log --no-walk --pretty="%d" -n 100000 | grep "(tag" |
+    awk '{print $2}' | sed -e 's/)//' |
+    awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }' |
+    sed -e 's/,$//'
 }
 
 function git::projecturl() {
