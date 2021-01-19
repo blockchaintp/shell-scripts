@@ -20,6 +20,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 @include commands
 @include doc
 @include log
+@include exec
 
 @package docker
 
