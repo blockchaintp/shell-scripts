@@ -148,7 +148,7 @@ function docker::promote_latest() {
       docker::tag "$registry/$repo:$target_tag" "$extra_registry/$repo:$target_tag"
     done
     for extra_registry in "$@"; do
-      docker::push "$extra_registry/$repo:$src_version"0
+      docker::push "$extra_registry/$repo:$src_version"
       docker::push "$extra_registry/$repo:$target_tag"
     done
   done
