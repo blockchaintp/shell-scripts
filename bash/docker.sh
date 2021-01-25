@@ -129,8 +129,9 @@ function docker::list_official_versions {
 
 function docker::promote_latest() {
   local organization=${1:?}
-  local registry=${2?}
+  local registry=${2:?}
   local target_tag=${3:?}
+  local simulate=${4}
   shift 3
 
   for repo in $(docker::list_repositories "$registry" |
@@ -142,14 +143,28 @@ function docker::promote_latest() {
       log::warn "$repo has no official version in $target_tag"
       continue
     fi
-    docker::cp "$registry/$repo:$src_version" "$registry/$repo:$target_tag"
+    if [ -z "$simulate" ]; then
+      docker::cp "$registry/$repo:$src_version" "$registry/$repo:$target_tag"
+    else
+      log::notice "Would copy $registry/$repo:$src_version to $registry/$repo:$target_tag"
+    fi
     for extra_registry in "$@"; do
-      docker::tag "$registry/$repo:$src_version" "$extra_registry/$repo:$src_version"
-      docker::tag "$registry/$repo:$target_tag" "$extra_registry/$repo:$target_tag"
+      if [ -z "$simulate" ]; then
+        docker::tag "$registry/$repo:$src_version" "$extra_registry/$repo:$src_version"
+        docker::tag "$registry/$repo:$target_tag" "$extra_registry/$repo:$target_tag"
+      else
+        log::notice "Would tag $registry/$repo:$src_version as $extra_registry/$repo:$src_version"
+        log::notice "Would tag $registry/$repo:$target_tag as $extra_registry/$repo:$target_tag"
+      fi
     done
     for extra_registry in "$@"; do
-      docker::push "$extra_registry/$repo:$src_version"
-      docker::push "$extra_registry/$repo:$target_tag"
+      if [ -z "$simulate" ]; then
+        docker::push "$extra_registry/$repo:$src_version"
+        docker::push "$extra_registry/$repo:$target_tag"
+      else
+        log::notice "Would push $extra_registry/$repo:$src_version"
+        log::notice "Would push $extra_registry/$repo:$target_tag"
+      fi
     done
   done
 }
