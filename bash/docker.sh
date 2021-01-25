@@ -131,7 +131,7 @@ function docker::promote_latest() {
   local organization=${1:?}
   local registry=${2:?}
   local target_tag=${3:?}
-  local simulate=${4}
+  local simulate=${SIMULATE:-""}
   shift 3
 
   for repo in $(docker::list_repositories "$registry" |
