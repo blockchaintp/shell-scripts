@@ -28,6 +28,7 @@ options::description "Switch all of the the branch of all of the target\
 options::add -o c -d "client repository set" -a -e CLIENT
 options::add -o o -d "target organization" -a -m -e ORG
 options::add -o b -d "branch to switch to" -a -m -e BRANCH
+options::add -o n -d "if this is a new branch" -x NEW_BRANCH
 options::parse "$@"
 shift $((OPTIND - 1))
 
@@ -45,7 +46,10 @@ for d in "$TARGET_DIR"/*; do
       log::warn "Cannot cd to $d"
       continue
     fi
-    if exec::hide git::cmd checkout -b "$BRANCH" "$@"; then
+    if [ "$NEW_BRANCH" = "true" ] && exec::hide git::cmd checkout -b \
+      "$BRANCH" "$@"; then
+      log::info "Checked out into new branch $BRANCH in $d"
+    elif exec::hide git::cmd checkout "$BRANCH" "$@"; then
       log::info "Checked out $BRANCH in $d"
     else
       log::warn "Failed to checkout branch $BRANCH in $d"
