@@ -17,6 +17,7 @@
 # shellcheck source=includer.sh
 source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
+@include options
 @include docker
 
 log::level 2
@@ -25,25 +26,37 @@ function usage() {
 }
 
 additional_registries=()
+function _add_additional_registry {
+  local registry=${1:?}
+  additional_registries+=("$registry")
+}
 
-while getopts ":s:t:r:x:a:" o; do
-  case "${o}" in
-    a)
-      additional_registries+=("${OPTARG}")
-      ;;
-    t)
-      target_tag=${OPTARG}
-      ;;
-    r)
-      target_registry=${OPTARG}
-      ;;
-    *)
-      usage
-      ;;
-  esac
-done
+options::standard
+options::description "various tools to do with releasing and publishing images"
+options::add -o t -d "Target tag pattern to copy" -a -m -e target_tag
+options::add -o r -d "Source registry to find images" -a -m -e target_registry
+options::add -o a -d "target registry url to copy to, may be repeated" -a -m -f _add_additional_registry
+options::add -o d -d "dry run execution" -x DRY_RUN
+options::add -o f -d "use images file" -a -e IMAGES_FILE
+options::parse "$@"
 shift $((OPTIND - 1))
 
-docker::promote_latest blockchaintp "$target_registry" \
-  "$target_tag" \
-  "${additional_registries[@]}"
+if [ "$DRY_RUN" = "true" ]; then
+  export SIMULATE=true
+fi
+
+if [ -z "$IMAGES_FILE" ]; then
+  for additional_registry in "${additional_registries[@]}"; do
+    docker::promote_latest blockchaintp "${target_registry:?}" \
+      "${target_tag:?}" \
+      "$additional_registry"
+  done
+else
+  while IFS= read -r repository; do
+    echo "Repository: $repository"
+    for additional_registry in "${additional_registries[@]}"; do
+      docker::cp "$target_registry/$repository:$target_tag" \
+        "$additional_registry/$repository:$target_tag"
+    done
+  done < <(grep -v '^ *#' <"$IMAGES_FILE")
+fi

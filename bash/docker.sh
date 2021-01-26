@@ -26,7 +26,11 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
 function docker::cmd() {
   @doc Smart command for docker.
-  $(commands::use docker) "$@"
+  if [ -z "$SIMULATE" ]; then
+    $(commands::use docker) "$@"
+  else
+    echo "$(commands::use docker)" "$@"
+  fi
 }
 
 function docker::pull() {
@@ -34,7 +38,7 @@ function docker::pull() {
   @arg _1_ the full image url to pull
   local image=${1:?}
   log::info "Pulling $image"
-  exec::hide docker::cmd pull -q "$image"
+  docker::cmd pull -q "$image"
 }
 
 function docker::tag() {
@@ -43,7 +47,7 @@ function docker::tag() {
   @arg _2_ the desired final url
   local from=${1:?}
   local to=${2:?}
-  exec::hide docker::cmd tag "$from" "$to"
+  docker::cmd tag "$from" "$to"
 }
 
 function docker::push() {
@@ -51,7 +55,7 @@ function docker::push() {
   @arg _1_ the full image url to push
   local image=${1:?}
   log::info "Pushing $image"
-  exec::hide docker::cmd push "$image"
+  docker::cmd push "$image"
 }
 
 function docker::cp() {
@@ -131,7 +135,6 @@ function docker::promote_latest() {
   local organization=${1:?}
   local registry=${2:?}
   local target_tag=${3:?}
-  local simulate=${SIMULATE:-""}
   shift 3
 
   for repo in $(docker::list_repositories "$registry" |
@@ -143,28 +146,14 @@ function docker::promote_latest() {
       log::warn "$repo has no official version in $target_tag"
       continue
     fi
-    if [ -z "$simulate" ]; then
-      docker::cp "$registry/$repo:$src_version" "$registry/$repo:$target_tag"
-    else
-      log::notice "Would copy $registry/$repo:$src_version to $registry/$repo:$target_tag"
-    fi
+    docker::cp "$registry/$repo:$src_version" "$registry/$repo:$target_tag"
     for extra_registry in "$@"; do
-      if [ -z "$simulate" ]; then
-        docker::tag "$registry/$repo:$src_version" "$extra_registry/$repo:$src_version"
-        docker::tag "$registry/$repo:$target_tag" "$extra_registry/$repo:$target_tag"
-      else
-        log::notice "Would tag $registry/$repo:$src_version as $extra_registry/$repo:$src_version"
-        log::notice "Would tag $registry/$repo:$target_tag as $extra_registry/$repo:$target_tag"
-      fi
+      docker::tag "$registry/$repo:$src_version" "$extra_registry/$repo:$src_version"
+      docker::tag "$registry/$repo:$target_tag" "$extra_registry/$repo:$target_tag"
     done
     for extra_registry in "$@"; do
-      if [ -z "$simulate" ]; then
-        docker::push "$extra_registry/$repo:$src_version"
-        docker::push "$extra_registry/$repo:$target_tag"
-      else
-        log::notice "Would push $extra_registry/$repo:$src_version"
-        log::notice "Would push $extra_registry/$repo:$target_tag"
-      fi
+      docker::push "$extra_registry/$repo:$src_version"
+      docker::push "$extra_registry/$repo:$target_tag"
     done
   done
 }
