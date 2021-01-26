@@ -54,6 +54,9 @@ if [ -z "$IMAGES_FILE" ]; then
 else
   while IFS= read -r repository; do
     echo "Repository: $repository"
+    docker::pull "$target_registry/$repository:$target_tag"
+  done < <(grep -v '^ *#' <"$IMAGES_FILE")
+  while IFS= read -r repository; do
     for additional_registry in "${additional_registries[@]}"; do
       docker::cp "$target_registry/$repository:$target_tag" \
         "$additional_registry/$repository:$target_tag"
