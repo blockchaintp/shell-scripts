@@ -39,5 +39,5 @@ for pod in $(k8s::ctl get pods -l "$LABEL" | grep -v NAME | awk '{print $1}' |
   exec::capture k8s::ctl cp "$pod:/etc/sawtooth/keys/validator.priv" \
     "keys/$node_name/validator.priv" -c validator
   exec::capture k8s::ctl cp "$pod:/etc/sawtooth/keys/validator.pub" \
-    "keys/$node_name/validaator.pub" -c validator
+    "keys/$node_name/validator.pub" -c validator
 done
