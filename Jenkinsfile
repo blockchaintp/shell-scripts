@@ -27,7 +27,7 @@ pipeline {
   }
 
   environment {
-    PUBLISH_BASE_URL="https://dev.catenasys.com/repository/catenasys-raw-dev/${env.JOB_NAME}"
+    PUBLISH_BASE_URL="https://dev.catenasys.com/repository/catenasys-raw-dev"
   }
 
   stages {
@@ -52,21 +52,26 @@ pipeline {
     }
 
     stage('Publish') {
-      when {
-        expression {
-          if (env.BRANCH_NAME == "main") {
-            return true
-          } else {
-            return false
-          }
-        }
-      }
       steps {
-        sh '''
-          for f in $(find dist -name '*.tar.gz' ); do
-            echo ${BASE_URL}/$f
-          done
-        '''
+        withCredentials([
+                          usernamePassword(credentialsId: 'btp-build-nexus',
+                                          usernameVariable:'USER',
+                                          passwordVariable:'PASSWORD')]) {
+          sh '''
+            for f in $(find dist -name '*.tar.gz' ); do
+              job_base_name=$(dirname "$JOB_NAME")
+              base=$(basename $f)
+
+              if [ "$BRANCH_NAME" = "main" ]; then
+                curl -u "$USER:$PASSWORD" --upload-file $f \
+                  ${PUBLISH_BASE_URL}/${job_base_name}/$base
+              else
+                curl -u "$USER:$PASSWORD" --upload-file $f \
+                  ${PUBLISH_BASE_URL}/${job_base_name}/$base
+              fi
+            done
+          '''
+        }
       }
     }
 
