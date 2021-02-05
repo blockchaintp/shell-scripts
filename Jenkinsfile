@@ -1,0 +1,107 @@
+#!groovy
+
+// Copyright 2021 Blockchain Technology Partners
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// ------------------------------------------------------------------------------
+
+
+pipeline {
+  agent any
+
+  options {
+    ansiColor('xterm')
+    timestamps()
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(daysToKeepStr: '31'))
+  }
+
+  environment {
+    PUBLISH_BASE_URL="https://dev.catenasys.com/repository/catenasys-raw-dev"
+  }
+
+  stages {
+    stage('Fetch Tags') {
+      steps {
+        checkout([$class: 'GitSCM', branches: [[name: "${GIT_BRANCH}"]],
+            doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [],
+            userRemoteConfigs: [[credentialsId: 'github-credentials',noTags:false, url: "${GIT_URL}"]],
+            extensions: [
+                  [$class: 'CloneOption',
+                  shallow: false,
+                  noTags: false,
+                  timeout: 60]
+            ]])
+      }
+    }
+
+    stage('Build') {
+      steps {
+        sh 'make clean all'
+      }
+    }
+
+    stage('Publish') {
+      steps {
+        withCredentials([
+                          usernamePassword(credentialsId: 'btp-build-nexus',
+                                          usernameVariable:'USER',
+                                          passwordVariable:'PASSWORD')]) {
+          sh '''
+            for f in $(find dist -name '*.tar.gz' ); do
+              job_base_name=$(dirname "$JOB_NAME")
+              base=$(basename $f)
+
+              if [ "$BRANCH_NAME" = "main" ]; then
+                curl -u "$USER:$PASSWORD" --upload-file $f \
+                  ${PUBLISH_BASE_URL}/${job_base_name}/$base
+              else
+                curl -u "$USER:$PASSWORD" --upload-file $f \
+                  ${PUBLISH_BASE_URL}/${job_base_name}/$base
+              fi
+            done
+          '''
+        }
+      }
+    }
+
+    stage('Create Archives') {
+      steps {
+        sh '''
+            REPO=$(git remote show -n origin | grep Fetch | awk -F'[/.]' '{print $6}')
+            VERSION=`git describe --dirty`
+            git archive HEAD --format=zip -9 --output=$REPO-$VERSION.zip
+            git archive HEAD --format=tgz -9 --output=$REPO-$VERSION.tgz
+        '''
+        archiveArtifacts artifacts: '**/*.zip'
+        archiveArtifacts artifacts: '**/*.tgz'
+      }
+    }
+
+  }
+
+  post {
+      always {
+        sh 'make clean || true '
+      }
+      success {
+        echo "Build success"
+      }
+      aborted {
+          error "Aborted, exiting now"
+      }
+      failure {
+          error "Failed, exiting now"
+      }
+  }
+}

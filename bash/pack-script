@@ -29,7 +29,7 @@ shift "$((OPTIND - 1))"
 
 function ::get_includes() {
   local file=${1:?}
-  grep "@include" "$file" | awk '{print $NF}'
+  grep "^@include" "$file" | awk '{print $NF}'
 }
 
 function get_all_includes() {
@@ -88,5 +88,3 @@ grep -v "^@include" "${TargetFile}" |
   grep -v "^#!" >>"${OutputFile:?}"
 
 echo >>"${OutputFile:?}"
-
-shfmt -i 2 -w "${OutputFile}"
