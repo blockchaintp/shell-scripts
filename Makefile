@@ -1,21 +1,37 @@
 
-.PHONY: all
-all: clean docs packed
+VERSION := $(shell git describe --dirty |cut -c2-)
 
-.PHONY: docs
-docs:
+.PHONY: all
+all: dist
+
+dist/doc-$(VERSION).tar.gz:
 	mkdir -p dist/doc/bash
 	for inc in $$(find bash -name \*.sh); do \
 		mdname=$$(echo $$inc | sed -e 's/\.sh/\.md/') ; \
-		bashadoc $$inc > dist/doc/$$mdname ; done
+		bash/bashadoc $$inc > dist/doc/$$mdname ; done
+	tar -zcf dist/doc-$(VERSION).tar.gz -C dist doc
+	rm -rf dist/doc
 
-.PHONY: packed
-packed:
-	mkdir dist/packed
-	bash/pack-script -f bash/k8s-support-collector -o dist/packed/k8s-support-collector
+dist/bin-$(VERSION).tar.gz:
+	mkdir -p dist/bin
+	for s in $$(find bash -type f -exec grep -q "includer" {} \; -print|grep -v ".sh$$"); do \
+		base=$$(basename $$s) ; \
+		bash/pack-script -v -f $$s -o dist/bin/$$base ; \
+	done
+	tar -zcf dist/bin-$(VERSION).tar.gz -C dist bin
+	rm -rf dist/bin
+
+dist/lib-$(VERSION).tar.gz:
+	mkdir -p dist/lib
+	cp bash/*.sh dist/lib
+	tar -zcf dist/lib-$(VERSION).tar.gz -C dist lib
+	rm -rf dist/lib
 
 .PHONY: clean
 clean:
 	rm -rf dist
 
 .PHONY: test
+
+.PHONY: dist
+dist: dist/doc-$(VERSION).tar.gz dist/bin-$(VERSION).tar.gz dist/lib-$(VERSION).tar.gz
