@@ -88,5 +88,3 @@ grep -v "^@include" "${TargetFile}" |
   grep -v "^#!" >>"${OutputFile:?}"
 
 echo >>"${OutputFile:?}"
-
-shfmt -i 2 -w "${OutputFile}"
