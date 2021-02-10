@@ -76,7 +76,6 @@ if [ "$skip" = "false" ]; then
       git add CHANGELOG.md
       git commit --no-verify -m "ci: Update CHANGELOG releasing $TAG" CHANGELOG.md
     fi
-    exit
     git::cmd tag -a -s "$TAG" -m "Auto Tagging $TAG"
   fi
 fi
