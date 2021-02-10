@@ -58,12 +58,12 @@ function ::full() {
       if [ "$this_version" != "$tag" ]; then
         echo "## $this_version"
         echo
-        ::fromto "$tag" "HEAD" "$(git::projecturl)"
+        ::fromto "$tag" "HEAD" "$(git::projecturl)" | grep -v '^* ci' | uniq
       fi
     else
       echo "## $later_tag"
       echo
-      ::fromto "$tag" "$later_tag" "$(git::projecturl)"
+      ::fromto "$tag" "$later_tag" "$(git::projecturl)" | grep -v '^* ci' | uniq
       later_tag="$tag"
     fi
   done
