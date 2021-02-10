@@ -55,8 +55,15 @@ function ::full() {
     if [ -z "$later_tag" ]; then
       later_tag="$tag"
       this_version=$(git describe --tags)
+      long_version=$(git describe --tags --long)
+      if [ "$this_version" = "$long_version" ]; then
+        header_version="Unreleased"
+      else
+        header_version="$this_version"
+      fi
+
       if [ "$this_version" != "$tag" ]; then
-        echo "## $this_version"
+        echo "## $header_version"
         echo
         ::fromto "$tag" "HEAD" "$(git::projecturl)" | grep -v '^* ci' | uniq
       fi
