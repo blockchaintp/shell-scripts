@@ -33,6 +33,14 @@ function docker::cmd() {
   fi
 }
 
+function docker::inspect() {
+  @doc inspect the specified item
+  @arg _1_ item to inspect
+  local item=${1:?}
+  log::info "Inspecting $item"
+  docker::cmd inspect "$item"
+}
+
 function docker::pull() {
   @doc pull the specified image
   @arg _1_ the full image url to pull
@@ -65,6 +73,54 @@ function docker::cp() {
   local from=${1:?}
   local to=${2:?}
   if docker::pull "$from"; then
+    if docker::tag "$from" "$to"; then
+      if docker::push "$to"; then
+        return 0
+      else
+        exit_code=$?
+        log::debug "Failed exit_code=$exit_code push $to"
+        return 3
+      fi
+    else
+      exit_code=$?
+      log::debug "Failed exit_code=$exit_code tag from as $to"
+      return 2
+    fi
+  else
+    exit_code=$?
+    log::debug "Failed exit_code=$exit_code pull $from"
+    return 1
+  fi
+}
+
+function docker::repo_tags_has() {
+  @doc check if the image named in the from tag is also the to tag
+  @arg _1_ the image to check
+  @arg _2_ the tag to search for
+  local from=${1:?}
+  local to=${2:?}
+  for tag in $(docker::inspect "$from" | jq -r '.[].RepoTags[]'); do
+    if [ "$tag" = "$to" ]; then
+      log::info "$from is also $to"
+      return 0
+    fi
+  done
+  return 1
+}
+
+function docker::cp_if_different() {
+  @doc copy an image from one image url to another if from is different
+  @arg _1_ source
+  @arg _2_ destination
+  local from=${1:?}
+  local to=${2:?}
+  if docker::pull "$from"; then
+    if docker::pull "$to"; then
+      #if $from and $to are the same, then return
+      if docker::repo_tags_has "$from" "$to"; then
+        return 0
+      fi
+    fi
     if docker::tag "$from" "$to"; then
       if docker::push "$to"; then
         return 0
@@ -146,7 +202,7 @@ function docker::promote_latest() {
       log::warn "$repo has no official version in $target_tag"
       continue
     fi
-    docker::cp "$registry/$repo:$src_version" "$registry/$repo:$target_tag"
+    docker::cp_if_different "$registry/$repo:$src_version" "$registry/$repo:$target_tag"
     for extra_registry in "$@"; do
       docker::tag "$registry/$repo:$src_version" "$extra_registry/$repo:$src_version"
       docker::tag "$registry/$repo:$target_tag" "$extra_registry/$repo:$target_tag"
