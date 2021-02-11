@@ -100,7 +100,19 @@ function docker::repo_tags_has() {
   local from=${1:?}
   local to=${2:?}
   for tag in $(docker::inspect "$from" | jq -r '.[].RepoTags[]'); do
+    local other_to
+    other_to=${to//index.docker.io\//}
     if [ "$tag" = "$to" ]; then
+      log::info "$from is also $to"
+      return 0
+    fi
+    other_to=${to//index.docker.io\//}
+    if [ "$tag" = "$other_to" ]; then
+      log::info "$from is also $to"
+      return 0
+    fi
+    other_to=${to//docker.io\//}
+    if [ "$tag" = "$other_to" ]; then
       log::info "$from is also $to"
       return 0
     fi
