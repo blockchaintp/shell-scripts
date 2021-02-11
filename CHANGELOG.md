@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* fix(docker): add cp_if_different to optimize promotions [view commit](http://github.com/https://github.com/catenasys/shell-scripts/commit/e058809b696179d7c2880895e3dcb454ac8e28f5)
 * fix(changelog): mark untagged changes in Unreleased [view commit](http://github.com/https://github.com/catenasys/shell-scripts/commit/d4d60dcf26195e3be9ffbf1fe0e829513e730614)
 * fix(update-repo-tags): re-enable tagging [view commit](http://github.com/https://github.com/catenasys/shell-scripts/commit/96f0bed726c1da6b56aa7566cc61f1272b8f1c8b)
 * feat(update-repo-tag): add option to generate and commit changelog [view commit](http://github.com/https://github.com/catenasys/shell-scripts/commit/e45461d129ef487bb322135671a1fcee55722481)
