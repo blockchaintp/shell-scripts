@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* fix(docker): repo_tags_has compensate for dockerhub dropping real hostnames [view commit](http://github.com/https://github.com/catenasys/shell-scripts/commit/ddb5cab0d19e9be4ccf4a3ddd57c1d734ed2028c)
 * fix(docker): cp_if_different always in promote_latest [view commit](http://github.com/https://github.com/catenasys/shell-scripts/commit/094a779803d922b31cc54c5ff88da8605f577ab8)
 * fix(docker): add cp_if_different to optimize promotions [view commit](http://github.com/https://github.com/catenasys/shell-scripts/commit/e058809b696179d7c2880895e3dcb454ac8e28f5)
 * fix(changelog): mark untagged changes in Unreleased [view commit](http://github.com/https://github.com/catenasys/shell-scripts/commit/d4d60dcf26195e3be9ffbf1fe0e829513e730614)
