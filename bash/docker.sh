@@ -204,12 +204,8 @@ function docker::promote_latest() {
     fi
     docker::cp_if_different "$registry/$repo:$src_version" "$registry/$repo:$target_tag"
     for extra_registry in "$@"; do
-      docker::tag "$registry/$repo:$src_version" "$extra_registry/$repo:$src_version"
-      docker::tag "$registry/$repo:$target_tag" "$extra_registry/$repo:$target_tag"
-    done
-    for extra_registry in "$@"; do
-      docker::push "$extra_registry/$repo:$src_version"
-      docker::push "$extra_registry/$repo:$target_tag"
+      docker::cp_if_different "$registry/$repo:$src_version" "$extra_registry/$repo:$src_version"
+      docker::cp_if_different "$registry/$repo:$target_tag" "$extra_registry/$repo:$target_tag"
     done
   done
 }
