@@ -45,7 +45,9 @@ function git::projecturl() {
     project_url=$(echo "$origin_url" | awk '{print $2}')
     project_url=${project_url//.git/}
     project_url=${project_url//git@github.com:/}
-    echo "http://github.com/$project_url/commit"
+    project_url=${project_url//https:\/\/github.com\//}
+    project_url=${project_url//http:\/\/github.com\//}
+    echo "https://github.com/$project_url/commit"
   fi
 }
 
