@@ -39,7 +39,6 @@ options::parse "$@"
 
 pushd "$TARGET_DIR" >/dev/null || exit 1
 
-CURRENT_REV=$(git::cmd describe --tags --match 'v*') || exit 1
 LATEST_TAG=$(git::cmd describe --tags --match 'v*' --abbrev=0) || exit 1
 LATEST_VERSION=$(echo "$LATEST_TAG" | cut -c2-)
 BREAKING_CHANGES=$(git::cmd log "$LATEST_TAG"..HEAD | grep -c "BREAKING CHANGE")
@@ -72,7 +71,7 @@ if [ "$skip" = "false" ]; then
     git::cmd tag "$TAG"
   else
     if [ "$GENERATE_CHANGELOG" = "true" ]; then
-      "$(dirs::of)"/changelog | sed -e "s/$CURRENT_REV/$TAG/" >CHANGELOG.md
+      "$(dirs::of)"/changelog | sed -e "s/Unreleased/$TAG/" >CHANGELOG.md
       git add CHANGELOG.md
       git commit --no-verify -m "ci: Update CHANGELOG releasing $TAG" CHANGELOG.md
     fi
