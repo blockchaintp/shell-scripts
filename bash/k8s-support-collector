@@ -28,6 +28,8 @@ options::description "Extract a useful collection of support information from a\
  kubernetes namespace and tar it up"
 options::add -o n -d "namespace to target" -a -e NAMESPACE
 options::add -o o -d "output directory" -a -e OUT_DIR
+options::add -o c -d "exclude configmaps" -x EXCLUDE_CONFIGMAPS
+options::add -o A -d "get all namespaces" -x ALL_NAMESPACES
 options::parse_available "$@"
 shift $((OPTIND - 1))
 
@@ -42,49 +44,57 @@ if [ -z "${NAMESPACE}" ]; then
     NAMESPACE="$ns"
   fi
 fi
-NS_ARGS=(-n "${NAMESPACE}")
-OUT_DIR_NS="${OUT_DIR}/${NAMESPACE}"
-OUT_DIR_LOGS="${OUT_DIR}/logs"
 
 dirs::replace "${OUT_DIR}"
 
 function topology {
-  log::notice "Saving topology"
-  dirs::ensure "${OUT_DIR_NS}"
-  k8s::get all "${NS_ARGS[@]}" -o yaml >"${OUT_DIR_NS}"/k8s-get-all.yaml
+  local ns=${1:?}
+  local out_dir_ns="${OUT_DIR}/$ns"
+  log::notice "Saving topology for namespace $ns"
+  dirs::ensure "$out_dir_ns"
+  k8s::get all -n "$ns" -o yaml >"${out_dir_ns}/k8s-get-all.yaml"
 }
 
 function configmaps {
-  log::notice "Saving configmaps"
-  dirs::ensure "${OUT_DIR_NS}"
-  k8s::get cm "${NS_ARGS[@]}" -o yaml >"${OUT_DIR_NS}"/k8s-get-cm.yaml
+  local ns=${1:?}
+  if [ "${EXCLUDE_CONFIGMAPS}" = "true" ]; then
+    return
+  fi
+  local out_dir_ns="${OUT_DIR}/$ns"
+  log::notice "Saving configmaps for namespace $ns"
+  dirs::ensure "$out_dir_ns"
+  k8s::get cm -n "$ns" -o yaml >"${out_dir_ns}/k8s-get-cm.yaml"
 }
 
 function describe_pods {
-  log::notice "Describing pods"
-  dirs::ensure "${OUT_DIR_NS}"
-  dirs::ensure "${OUT_DIR_NS}"/pod
-  for pod in $(k8s::get_pod_names "${NS_ARGS[@]}"); do
-    k8s::describe "$pod" >"${OUT_DIR_NS}/$pod.describe"
+  local ns=${1:?}
+  local out_dir_ns="${OUT_DIR}/$ns"
+  log::notice "Describing pods for namespace $ns"
+  dirs::ensure "$out_dir_ns"
+  dirs::ensure "$out_dir_ns/pod"
+  for pod in $(k8s::get_pod_names -n "$ns"); do
+    k8s::describe -n "$ns" "$pod" >"${out_dir_ns}/$pod.describe"
   done
 }
 
 function logs {
-  log::notice "Saving logs"
-  dirs::ensure "${OUT_DIR_LOGS}"
-  for pod in $(k8s::get_pod_names "${NS_ARGS[@]}"); do
-    for container in $(k8s::get_containers_for_pod "$pod"); do
-      dirs::ensure "${OUT_DIR_LOGS}/$pod"
-      k8s::log "$pod" -c "$container" --timestamps \
-        >"${OUT_DIR_LOGS}/$pod/$container-current.log"
-      k8s::log "$pod" -c "$container" --timestamps \
-        -p >"${OUT_DIR_LOGS}/$pod/$container-previous.log" 2>/dev/null || true
+  local ns=${1:?}
+  local out_dir_ns="${OUT_DIR}/$ns"
+  log::notice "Saving logs for namespace $ns"
+  dirs::ensure "${out_dir_ns}"
+  for pod in $(k8s::get_pod_names -n "$ns"); do
+    for container in $(k8s::get_containers_for_pod "$pod" "$ns"); do
+      dirs::ensure "${out_dir_ns}/$pod"
+      k8s::log -n "$ns" "$pod" -c "$container" --timestamps \
+        >"${out_dir_ns}/$pod/$container-current.log"
+      k8s::log -n "$ns" "$pod" -c "$container" --timestamps \
+        -p >"${out_dir_ns}/$pod/$container-previous.log" 2>/dev/null || true
       if [ "$container" = "validator" ]; then
         log::notice "$pod container \"$container\" pulling extra logs"
         pod_sname=$(echo "$pod" | awk -F/ '{print $NF}')
-        exec::hide k8s::cp -c "$container" \
+        exec::hide k8s::cp -n "$ns" -c "$container" \
           "$pod_sname:/var/log/sawtooth/validator-debug.log" \
-          "${OUT_DIR_LOGS}/$pod/validator-debug.log"
+          "${out_dir_ns}/$pod/validator-debug.log"
       fi
     done
   done
@@ -96,13 +106,34 @@ function create_package {
   local cluster
   cluster=$(k8s::current_cluster)
   local file="$cluster.${NAMESPACE:-CURRENT}-${now}.tar.gz"
+  if [ "${ALL_NAMESPACES}" = "true" ]; then
+    file="$cluster.ALL-${now}.tar.gz"
+  fi
   log::notice "Creating package $file"
   find "${OUT_DIR}" -type f -print0 | sed -e "s@$OUT_DIR/@@g" |
     xargs -0 tar cfz "$file" -C "${OUT_DIR}"
+  if [ -n "$(command -v shred)" ]; then
+    log::notice "Shredding temporary files in ${OUT_DIR}"
+    find "${OUT_DIR}" -type f -exec shred {} \;
+  fi
+  log::notice "Removing ${OUT_DIR}"
+  rm -rf "${OUT_DIR}"
 }
 
-topology
-describe_pods
-configmaps
-logs
+if [ "${ALL_NAMESPACES}" = "true" ]; then
+  log::notice "Collecting information from all namespaces"
+  for ns in $(k8s::get_ns); do
+    log::notice "Begin collection for namespace $ns"
+    topology "$ns"
+    describe_pods "$ns"
+    configmaps "$ns"
+    logs "$ns"
+    log::notice "End collection for namespace $ns"
+  done
+else
+  topology "$NAMESPACE"
+  describe_pods "$NAMESPACE"
+  configmaps "$NAMESPACE"
+  logs "$NAMESPACE"
+fi
 create_package
