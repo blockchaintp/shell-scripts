@@ -71,11 +71,19 @@ function k8s::get_pod_names() {
   k8s::get pods -o name "$@"
 }
 
+function k8s::get_ns() {
+  @doc get the list of pod names
+  for ns in $(k8s::get ns -o name "$@"); do
+    echo "${ns//namespace\//}"
+  done
+}
+
 function k8s::get_containers_for_pod() {
   @doc get the list of container names for this pod
   local pod=${1:?}
+  local ns=${2:?}
   pod=${pod//pod\//}
-  k8s::get pod "${pod}" -o json | $(commands::use jq) \
+  k8s::get pod -n "$ns" "${pod}" -o json | $(commands::use jq) \
     -r '.spec.containers[].name'
 }
 
