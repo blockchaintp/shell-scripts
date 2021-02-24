@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* feat(bash): add the ability to collect from all NS [view commit](https://github.com/catenasys/shell-scripts/commit/49402e983915b0a372f84613ded393d43b6d063d)
+* refactor(aliases): adjust aliases to use kubectl config directly [view commit](https://github.com/catenasys/shell-scripts/commit/7942c1589fde4407477d17d275302cea53c0429f)
+* fix(update-repo-tags): replace Unreleased with new tag in changelog [view commit](https://github.com/catenasys/shell-scripts/commit/4c2aa9c944247cf77d26a5dbcf18f5bfcafc3c73)
 * fix(git): correct git project url substitution [view commit](https://github.com/catenasys/shell-scripts/commit/1b583b9bc618ec6af3537ff571bc1c10e4c5a300)
 * fix(mddoc): support empty markdown lines [view commit](https://github.com/catenasys/shell-scripts/commit/9fdb5f2d6da836d5c4771ac6cebc3f8cf6aaf053)
 * feat(bash): add mddoc script for generically adding markdown inline via comments [view commit](https://github.com/catenasys/shell-scripts/commit/ae3aaa8dbb9461b38cd520b95e5e959246675c96)
