@@ -26,7 +26,7 @@ function exec::capture() {
   @doc Execute the provided command and capture the output to a log.
   @arg _1_ the command to execute
   @arg @ the arguments to the command
-  if [ -n "$LOGFILE_DISABLE" ]; then
+  if [ -z "$LOGFILE_DISABLE" ] || [ "$LOGFILE_DISABLE" != "true" ]; then
     local logfile=${LOGFILE:-"exec.log"}
     "$@" 2>&1 | tee -a "$logfile"
     exit_code=${PIPESTATUS[0]}

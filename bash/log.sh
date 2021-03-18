@@ -227,7 +227,7 @@ LOG_HANDLER_DEFAULT() {
   local formatted_log
   formatted_log="$(FORMAT_LOG "$@")"
   LOG_HANDLER_COLORTERM "$1" "$formatted_log"
-  if [ -z "$LOGFILE_DISABLE" ]; then
+  if [ -z "$LOGFILE_DISABLE" ] || [ "$LOGFILE_DISABLE" != "true" ]; then
     LOG_HANDLER_LOGFILE "$1" "$formatted_log"
   fi
 }
