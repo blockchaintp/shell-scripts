@@ -62,15 +62,21 @@ function ::full() {
         header_version="$this_version"
       fi
 
-      if [ "$this_version" != "$tag" ]; then
-        echo "## $header_version"
-        echo
-        ::fromto "$tag" "HEAD" "$(git::projecturl)" | grep -v '^* ci' | uniq
+      change_count=$(::fromto "$tag" "HEAD" "$(git::projecturl)" | grep . | grep -v '^* ci' | uniq | wc -l)
+      if [ "$change_count" -gt 0 ]; then
+        if [ "$this_version" != "$tag" ]; then
+          echo "## $header_version"
+          echo
+          ::fromto "$tag" "HEAD" "$(git::projecturl)" | grep -v '^* ci' | uniq
+        fi
       fi
     else
-      echo "## $later_tag"
-      echo
-      ::fromto "$tag" "$later_tag" "$(git::projecturl)" | grep -v '^* ci' | uniq
+      change_count=$(::fromto "$tag" "HEAD" "$(git::projecturl)" | grep . | grep -v '^* ci' | uniq | wc -l)
+      if [ "$change_count" -gt 0 ]; then
+        echo "## $later_tag"
+        echo
+        ::fromto "$tag" "$later_tag" "$(git::projecturl)" | grep -v '^* ci' | uniq
+      fi
       later_tag="$tag"
     fi
   done
