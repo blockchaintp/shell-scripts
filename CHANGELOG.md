@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* fix(bash): changelog don't print an entry if there are no real changes [view commit](https://github.com/catenasys/shell-scripts/commit/ef41ece488f91cbe7c58c6b106ea89ff609af5c6)
+* fix(bash): correct logging parameters [view commit](https://github.com/catenasys/shell-scripts/commit/307ce0d94431c8717d047eb2402b2cbd48fb6cb3)
 * feat(bash): add the ability to collect from all NS [view commit](https://github.com/catenasys/shell-scripts/commit/49402e983915b0a372f84613ded393d43b6d063d)
 * refactor(aliases): adjust aliases to use kubectl config directly [view commit](https://github.com/catenasys/shell-scripts/commit/7942c1589fde4407477d17d275302cea53c0429f)
 * fix(update-repo-tags): replace Unreleased with new tag in changelog [view commit](https://github.com/catenasys/shell-scripts/commit/4c2aa9c944247cf77d26a5dbcf18f5bfcafc3c73)
