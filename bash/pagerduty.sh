@@ -36,24 +36,22 @@ function send_incident() {
   #trap 'rm -f "$pg_data"' EXIT
   #pg_data=$(mktemp)
   #cat <<EOF > "$pg_data"
-##{ "incident": { "type": "$alert_type", "title": "$alert_title", "service": { "id": "$service_id", "type": "service_reference" } } }
-#EOF
+  ##{ "incident": { "type": "$alert_type", "title": "$alert_title", "service": { "id": "$service_id", "type": "service_reference" } } }
+  #EOF
 
-  incident_data()
-  {
-    cat << EOF
+  incident_data() {
+    cat <<EOF
     { "incident": { "type": "$alert_type", "title": "$alert_title", "service": { "id": "$service_id", "type": "service_reference" } } }
 EOF
   }
 
   _curl -vvv -X POST --header 'Content-Type: application/json' \
-  --header 'Accept: application/vnd.pagerduty+json;version=2' \
-  --header "From: $alert_from" \
-  --header "Authorization: Token token=$alert_token" \
-  --data "$(incident_data)" 'https://api.pagerduty.com/incidents'
+    --header 'Accept: application/vnd.pagerduty+json;version=2' \
+    --header "From: $alert_from" \
+    --header "Authorization: Token token=$alert_token" \
+    --data "$(incident_data)" 'https://api.pagerduty.com/incidents'
   log::info "Sent PagerDuty incident"
 }
-  #--data "$(cat "$pg_data")" 'https://api.pagerduty.com/incidents'
 
 function send_event() {
   #set -x
