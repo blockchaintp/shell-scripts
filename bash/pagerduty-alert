@@ -30,6 +30,7 @@ options::add -o a -d "Alert API Token" -a -m -e ALERT_TOKEN
 options::add -o s -d "PagerDuty ServiceID" -a -m -e SERVICE_ID
 options::add -o i -d "Alert Type (incident or event)" -a -m -e ALERT_TYPE
 options::add -o t -d "Alert Title" -a -e ALERT_TITLE
+options::add -o k -d "Incident Key" -a -e INCIDENT_KEY
 options::add -o f -d "Alert From Email Address" -a -e ALERT_FROM
 options::parse_available "$@"
 
@@ -38,7 +39,7 @@ ALERT_FROM=${ALERT_FROM:="no-reply@blockchaintp.com"}
 
 case $ALERT_TYPE in
   incident)
-    exec::hide send_incident "$SERVICE_ID" "$ALERT_TYPE" "$ALERT_TITLE" "$ALERT_FROM" "$ALERT_TOKEN" ||
+    exec::hide send_incident "$SERVICE_ID" "$ALERT_TYPE" "$ALERT_TITLE" "$ALERT_FROM" "$ALERT_TOKEN" "$INCIDENT_KEY" ||
       error::exit "Failed to send $ALERT_TYPE"
     ;;
   event)

@@ -32,20 +32,15 @@ function send_incident() {
   local alert_title="${3:?}"
   local alert_from="${4:?}"
   local alert_token="${5:?}"
-
-  #trap 'rm -f "$pg_data"' EXIT
-  #pg_data=$(mktemp)
-  #cat <<EOF > "$pg_data"
-  ##{ "incident": { "type": "$alert_type", "title": "$alert_title", "service": { "id": "$service_id", "type": "service_reference" } } }
-  #EOF
+  local incident_key="${6:?}"
 
   incident_data() {
     cat <<EOF
-    { "incident": { "type": "$alert_type", "title": "$alert_title", "service": { "id": "$service_id", "type": "service_reference" } } }
+    { "incident": { "type": "$alert_type", "title": "$alert_title", "service": { "id": "$service_id", "type": "service_reference" }, "incident_key": "$incident_key" } }
 EOF
   }
 
-  _curl -vvv -X POST --header 'Content-Type: application/json' \
+  _curl POST --header 'Content-Type: application/json' \
     --header 'Accept: application/vnd.pagerduty+json;version=2' \
     --header "From: $alert_from" \
     --header "Authorization: Token token=$alert_token" \
