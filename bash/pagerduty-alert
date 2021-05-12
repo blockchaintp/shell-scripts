@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Copyright 2021 Blockchain Technology Partners
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http:#www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------------
+
+# shellcheck source=includer.sh
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
+
+@include pagerduty
+@include exec
+@include error
+@include log
+@include options
+
+log::level 2
+options::standard
+options::description "Creates PagerDuty alert (incident or event)"
+options::add -o a -d "Alert API Token" -a -m -e ALERT_TOKEN
+options::add -o s -d "PagerDuty ServiceID" -a -m -e SERVICE_ID
+options::add -o i -d "Alert Type (incident or event)" -a -m -e ALERT_TYPE
+options::add -o t -d "Alert Title" -a -e ALERT_TITLE
+options::add -o k -d "Incident Key" -a -e INCIDENT_KEY
+options::add -o f -d "Alert From Email Address" -a -e ALERT_FROM
+options::parse_available "$@"
+
+ALERT_TITLE=${ALERT_TITLE:="Test Alert"}
+ALERT_FROM=${ALERT_FROM:="no-reply@blockchaintp.com"}
+
+case $ALERT_TYPE in
+  incident)
+    exec::hide send_incident "$SERVICE_ID" "$ALERT_TYPE" "$ALERT_TITLE" "$ALERT_FROM" "$ALERT_TOKEN" "$INCIDENT_KEY" ||
+      error::exit "Failed to send $ALERT_TYPE"
+    ;;
+  event)
+    #exec::hide send_event "$ALERT_TOKEN" "$SERVICE_ID" "$ALERT_TITLE" || error::exit "Failed to send $ALERT_TYPE"
+    ;;
+esac
