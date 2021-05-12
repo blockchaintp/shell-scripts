@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+* feat(bash): add pagerduty-alert [view commit](https://github.com/catenasys/shell-scripts/commit/782c57619e842dfaac1ffb9a6e1509607174a1ab)
+* feat(bash): add pagerduty-alert [view commit](https://github.com/catenasys/shell-scripts/commit/eb09f6fc4afe6648594d434795cef55a54698403)
+* feat(bash): add pagerduty-alert script [view commit](https://github.com/catenasys/shell-scripts/commit/291e492fe1ac2c9cfcdd66f858ac1aa6a234aedb)
+* build: update pre-config-config [view commit](https://github.com/catenasys/shell-scripts/commit/d29849482e4803b8248ea840a777c77a0eb2ca73)
 * fix(bash): changelog don't print an entry if there are no real changes [view commit](https://github.com/catenasys/shell-scripts/commit/ef41ece488f91cbe7c58c6b106ea89ff609af5c6)
 * fix(bash): correct logging parameters [view commit](https://github.com/catenasys/shell-scripts/commit/307ce0d94431c8717d047eb2402b2cbd48fb6cb3)
 * feat(bash): add the ability to collect from all NS [view commit](https://github.com/catenasys/shell-scripts/commit/49402e983915b0a372f84613ded393d43b6d063d)
