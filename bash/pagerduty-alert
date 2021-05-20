@@ -36,6 +36,7 @@ options::parse_available "$@"
 
 ALERT_TITLE=${ALERT_TITLE:="Test Alert"}
 ALERT_FROM=${ALERT_FROM:="no-reply@blockchaintp.com"}
+INCIDENT_KEY=${INCIDENT_KEY:="default_dedup"}
 
 case $ALERT_TYPE in
   incident)
