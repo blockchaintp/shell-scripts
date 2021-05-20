@@ -34,11 +34,19 @@ function send_incident() {
   local alert_token="${5:?}"
   local incident_key="${6:?}"
 
-  incident_data() {
-    cat <<EOF
-    { "incident": { "type": "$alert_type", "title": "$alert_title", "service": { "id": "$service_id", "type": "service_reference" }, "incident_key": "$incident_key" } }
+  if [ -z "$incident_key" ]; then
+    incident_data() {
+      cat <<EOF
+        { "incident": { "type": "$alert_type", "title": "$alert_title", "service": { "id": "$service_id", "type": "service_reference" } } }
 EOF
-  }
+    }
+  else
+    incident_data() {
+      cat <<EOF
+        { "incident": { "type": "$alert_type", "title": "$alert_title", "service": { "id": "$service_id", "type": "service_reference" }, "incident_key": "$incident_key" } }
+EOF
+    }
+  fi
 
   _curl POST --header 'Content-Type: application/json' \
     --header 'Accept: application/vnd.pagerduty+json;version=2' \
