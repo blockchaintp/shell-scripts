@@ -32,7 +32,7 @@ function send_incident() {
   local alert_title="${3:?}"
   local alert_from="${4:?}"
   local alert_token="${5:?}"
-  local incident_key="${6:?}"
+  local incident_key="${6}"
 
   if [ -z "$incident_key" ]; then
     incident_data() {
