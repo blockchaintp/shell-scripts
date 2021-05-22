@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* feat(bash): add pagerduty-alert [view commit](https://github.com/catenasys/shell-scripts/commit/a90c756ee6730aa5f6f407496d14cbd9bd3bb871)
+* feat(bash): add pagerduty-alert [view commit](https://github.com/catenasys/shell-scripts/commit/8b73b4f8e8913f36df3df8882c01474fee9e6d9d)
+* feat(bash): add default incident dedup key [view commit](https://github.com/catenasys/shell-scripts/commit/57c03b28fd534f767a3eb7ea8cd5eb07c0ac4823)
 * feat(bash): add pagerduty-alert [view commit](https://github.com/catenasys/shell-scripts/commit/782c57619e842dfaac1ffb9a6e1509607174a1ab)
 * feat(bash): add pagerduty-alert [view commit](https://github.com/catenasys/shell-scripts/commit/eb09f6fc4afe6648594d434795cef55a54698403)
 * feat(bash): add pagerduty-alert script [view commit](https://github.com/catenasys/shell-scripts/commit/291e492fe1ac2c9cfcdd66f858ac1aa6a234aedb)
