@@ -10,7 +10,7 @@ package: package_scripts
 
 publish: package gh-create-draft-release
 	if [ "$(RELEASABLE)" = "yes" ];then \
-	  $(GH_RELEASE) upload $(VERSION) dist/*.tgz; \
+	  $(GH_RELEASE) upload $(VERSION) dist/*.tar.gz; \
 	fi
 
 .PHONY: package_scripts
