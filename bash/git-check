@@ -50,53 +50,109 @@ if [ -n "${BASE}" ]; then
   BASE="${BASE}/"
 fi
 
-log::info "Scanning $HOME/git/${BASE}${EXTRA} for repositories"
-max_repo_len=0
-max_branch_len=0
-for repo in $(find "$HOME/git/${BASE}${EXTRA}" -mindepth "${DEPTH}" -maxdepth "${DEPTH}" -name .git -exec dirname {} \; | sort); do
-  cd "$repo" || exit 1
-  replace_path="$HOME/git\/${BASE}"
-  base_name=${repo//$replace_path/}
-  orgname=$(dirname "$base_name")
+function base_name_for_repo {
+  local replace_path=${1:?}
+  local repo_path=${2:?}
+  echo "${repo_path//$replace_path/}"
+}
+
+function get_branch_name {
+  local branch_name
   branch_name=$(git::cmd symbolic-ref -q HEAD)
   branch_name=${branch_name##refs/heads/}
   branch_name=${branch_name:-HEAD}
+  echo "$branch_name"
+}
+
+function pull_if_different {
+  local base_name
+  base_name=${1:?}
+  branch_name=${2:?}
+  if git::cmd diff "remotes/origin/$branch_name" --quiet >/dev/null 2>&1; then
+    log::info "Examining $base_name: up to date"
+  else
+    log::notice "Examining $base_name: pulling"
+    exec::hide git::cmd pull
+  fi
+}
+
+function get_gh_pr_count {
+  local orgname
+  local base_name
+  orgname=${1:?}
+  base_name=${2:?}
+  if [ "$GH_PR_CHECK" != "true" ]; then
+    echo -
+    return
+  fi
+  if command -v gh >/dev/null; then
+    if [ "$orgname" = "blockchaintp" ] ||
+      [ "$orgname" = "catenasys" ] || [ "$orgname" = "scealiontach" ]; then
+      log::debug "Checking pull requests for $base_name"
+      gh pr list -R "$base_name" | grep -cv "no open"
+    else
+      echo -
+    fi
+  else
+    echo .
+  fi
+}
+
+function get_bb_pr_count {
+  local orgname
+  local base_name
+  orgname=${1:?}
+  base_name=${2:?}
+  if [ "$GH_PR_CHECK" != "true" ]; then
+    echo -
+    return
+  fi
+  if command -v bb >/dev/null; then
+    if [ "$orgname" = "TASE" ]; then
+      log::debug "Checking pull requests for $base_name"
+      bb -c "$orgname" pr-count "$base_name"
+    else
+      echo -
+    fi
+  else
+    echo .
+  fi
+}
+
+base_path="$HOME/git/${BASE}"
+log::info "Scanning ${base_path}${EXTRA} for repositories"
+
+max_repo_len=0
+max_branch_len=0
+for repo in $(find "${base_path}${EXTRA}" -mindepth "${DEPTH}" -maxdepth "${DEPTH}" -name .git -exec dirname {} \; | sort); do
+  cd "$repo" || exit 1
+  base_name=$(base_name_for_repo "$base_path" "$repo")
+  orgname=$(dirname "$base_name")
+  branch_name=$(get_branch_name)
   dirty_version=$(git::describe --tags 2>/dev/null)-dirty
   version=$(git::describe --dirty --tags 2>/dev/null)
   long_version=$(git::describe --long --tags 2>/dev/null)
 
   len=${#base_name}
   branch_len=${#branch_name}
+
   max_repo_len=$((len > max_repo_len ? len : max_repo_len))
   max_branch_len=$((branch_len > max_branch_len ? branch_len : max_branch_len))
   status=$(git::cmd status --short | wc -l)
   if [ "$status" = "0" ]; then
-    if git::cmd diff "remotes/origin/$branch_name" --quiet >/dev/null 2>&1; then
-      log::info "Examining $base_name: up to date"
-    else
-      log::notice "Examining $base_name: pulling"
-      exec::hide git::cmd pull
-    fi
+    pull_if_different "$base_name" "$branch_name"
   else
     log::notice "Examining $base_name: dirty"
   fi
-  pr_count='.'
-  if command -v gh >/dev/null; then
-    if [ -z "$CLIENT" ]; then
-      if [ "$GH_PR_CHECK" = "true" ]; then
-        if [ "$orgname" = "blockchaintp" ] ||
-          [ "$orgname" = "catenasys" ] || [ "$orgname" = "scealiontach" ]; then
-          log::debug "Checking pull requests for $base_name"
-          pr_count=$(gh pr list | grep -cv "no open")
-        fi
-      fi
-    elif [ "$CLIENT" = "TASE" ]; then
-      if [ "$GH_PR_CHECK" = "true" ]; then
-        log::debug "Checking pull requests for $base_name"
-        pr_count=$(bb -c "$CLIENT" pr-count "$base_name")
-      fi
-    fi
+
+  if [ -z "$CLIENT" ]; then
+    pr_count=$(get_gh_pr_count "$orgname" "$base_name")
+  elif [ "$CLIENT" = "TASE" ]; then
+    pr_count=$(get_bb_pr_count "$CLIENT" "$base_name")
+  else
+    pr_count='.'
   fi
+
   if [ -z "$version" ]; then
     version=$(git::cmd rev-parse --short HEAD)
     UNCOMMITTED="${UNCOMMITTED}$base_name:$pr_count:$branch_name:$version,"
