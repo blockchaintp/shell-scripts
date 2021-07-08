@@ -47,61 +47,63 @@ pipeline {
 
     stage('Build') {
       steps {
-        sh 'make clean all'
+        sh 'make clean build'
       }
     }
 
-    stage('Publish') {
+    stage('Package') {
       steps {
-        withCredentials([
-                          usernamePassword(credentialsId: 'btp-build-nexus',
-                                          usernameVariable:'USER',
-                                          passwordVariable:'PASSWORD')]) {
-          sh '''
-            for f in $(find dist -name '*.tar.gz' ); do
-              job_base_name=$(dirname "$JOB_NAME")
-              base=$(basename $f)
+        sh "make package"
+      }
+    }
 
-              if [ "$BRANCH_NAME" = "main" ]; then
-                curl -u "$USER:$PASSWORD" --upload-file $f \
-                  ${PUBLISH_BASE_URL}/${job_base_name}/$base
-              else
-                curl -u "$USER:$PASSWORD" --upload-file $f \
-                  ${PUBLISH_BASE_URL}/${job_base_name}/$base
-              fi
-            done
+    stage("Analyze") {
+      steps {
+        withCredentials([string(credentialsId: 'fossa.full.token', variable: 'FOSSA_API_KEY')]) {
+          sh '''
+            make analyze
           '''
         }
       }
     }
 
-    stage('Create Archives') {
+    stage('Test') {
       steps {
-        sh '''
-            REPO=$(git remote show -n origin | grep Fetch | awk -F'[/.]' '{print $6}')
-            VERSION=`git describe --dirty`
-            git archive HEAD --format=zip -9 --output=$REPO-$VERSION.zip
-            git archive HEAD --format=tgz -9 --output=$REPO-$VERSION.tgz
-        '''
-        archiveArtifacts artifacts: '**/*.zip'
-        archiveArtifacts artifacts: '**/*.tgz'
+        sh "make test"
       }
     }
 
+    stage('Create Archive') {
+      steps {
+        sh "make archive"
+        archiveArtifacts 'build/*.tgz, build/*.zip'
+      }
+    }
+
+    stage("Publish") {
+      when {
+        expression { env.BRANCH_NAME == "main" }
+      }
+      steps {
+        withCredentials([string(credentialsId: 'btp-build-github-pat',
+                                variable: 'GITHUB_TOKEN')]) {
+          sh '''
+            make clean publish
+          '''
+        }
+      }
+    }
   }
 
   post {
-      always {
-        sh 'make clean || true '
-      }
-      success {
-        echo "Build success"
-      }
-      aborted {
-          error "Aborted, exiting now"
-      }
-      failure {
-          error "Failed, exiting now"
-      }
+    success {
+      echo "Successfully completed"
+    }
+    aborted {
+      error "Aborted, exiting now"
+    }
+    failure {
+      error "Failed, exiting now"
+    }
   }
 }
