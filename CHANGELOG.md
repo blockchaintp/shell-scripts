@@ -1,7 +1,8 @@
 # CHANGELOG
 
-## Unreleased
+## v0.1.4
 
+* fix(bash): update-repo-tags should add links when it gens changelog [view commit](https://github.com/catenasys/shell-scripts/commit/f6bb36ca7693a2de8701db0af6395f694f0c2fdf)
 * feat(bash): add pagerduty-alert [view commit](https://github.com/catenasys/shell-scripts/commit/a90c756ee6730aa5f6f407496d14cbd9bd3bb871)
 * feat(bash): add pagerduty-alert [view commit](https://github.com/catenasys/shell-scripts/commit/8b73b4f8e8913f36df3df8882c01474fee9e6d9d)
 * feat(bash): add default incident dedup key [view commit](https://github.com/catenasys/shell-scripts/commit/57c03b28fd534f767a3eb7ea8cd5eb07c0ac4823)
@@ -13,14 +14,14 @@
 * fix(bash): correct logging parameters [view commit](https://github.com/catenasys/shell-scripts/commit/307ce0d94431c8717d047eb2402b2cbd48fb6cb3)
 * feat(bash): add the ability to collect from all NS [view commit](https://github.com/catenasys/shell-scripts/commit/49402e983915b0a372f84613ded393d43b6d063d)
 * refactor(aliases): adjust aliases to use kubectl config directly [view commit](https://github.com/catenasys/shell-scripts/commit/7942c1589fde4407477d17d275302cea53c0429f)
-* fix(update-repo-tags): replace Unreleased with new tag in changelog [view commit](https://github.com/catenasys/shell-scripts/commit/4c2aa9c944247cf77d26a5dbcf18f5bfcafc3c73)
+* fix(update-repo-tags): replace v0.1.4 with new tag in changelog [view commit](https://github.com/catenasys/shell-scripts/commit/4c2aa9c944247cf77d26a5dbcf18f5bfcafc3c73)
 * fix(git): correct git project url substitution [view commit](https://github.com/catenasys/shell-scripts/commit/1b583b9bc618ec6af3537ff571bc1c10e4c5a300)
 * fix(mddoc): support empty markdown lines [view commit](https://github.com/catenasys/shell-scripts/commit/9fdb5f2d6da836d5c4771ac6cebc3f8cf6aaf053)
 * feat(bash): add mddoc script for generically adding markdown inline via comments [view commit](https://github.com/catenasys/shell-scripts/commit/ae3aaa8dbb9461b38cd520b95e5e959246675c96)
 * fix(docker): repo_tags_has compensate for dockerhub dropping real hostnames [view commit](https://github.com/catenasys/shell-scripts/commit/ddb5cab0d19e9be4ccf4a3ddd57c1d734ed2028c)
 * fix(docker): cp_if_different always in promote_latest [view commit](https://github.com/catenasys/shell-scripts/commit/094a779803d922b31cc54c5ff88da8605f577ab8)
 * fix(docker): add cp_if_different to optimize promotions [view commit](https://github.com/catenasys/shell-scripts/commit/e058809b696179d7c2880895e3dcb454ac8e28f5)
-* fix(changelog): mark untagged changes in Unreleased [view commit](https://github.com/catenasys/shell-scripts/commit/d4d60dcf26195e3be9ffbf1fe0e829513e730614)
+* fix(changelog): mark untagged changes in v0.1.4 [view commit](https://github.com/catenasys/shell-scripts/commit/d4d60dcf26195e3be9ffbf1fe0e829513e730614)
 * fix(update-repo-tags): re-enable tagging [view commit](https://github.com/catenasys/shell-scripts/commit/96f0bed726c1da6b56aa7566cc61f1272b8f1c8b)
 * feat(update-repo-tag): add option to generate and commit changelog [view commit](https://github.com/catenasys/shell-scripts/commit/e45461d129ef487bb322135671a1fcee55722481)
 * fix(changelog): exclude ci changes from changelog [view commit](https://github.com/catenasys/shell-scripts/commit/944c0bc0a664d27a9436f23e9d7ab085ca1a4a33)
