@@ -71,7 +71,7 @@ if [ "$skip" = "false" ]; then
     git::cmd tag "$TAG"
   else
     if [ "$GENERATE_CHANGELOG" = "true" ]; then
-      "$(dirs::of)"/changelog | sed -e "s/Unreleased/$TAG/" >CHANGELOG.md
+      "$(dirs::of)"/changelog -l | sed -e "s/Unreleased/$TAG/" >CHANGELOG.md
       git add CHANGELOG.md
       git commit --no-verify -m "ci: Update CHANGELOG releasing $TAG" CHANGELOG.md
     fi
