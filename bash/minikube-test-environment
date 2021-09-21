@@ -1,0 +1,190 @@
+#!/bin/bash
+
+KUBERNETES_VERSION=${KUBERNETES_VERSION:-stable}
+MINIKUBE_DRIVER=${DOCKER:-docker}
+NODES=${NODES:-4}
+NODE_MEMORY=${NODE_MEMORY:-8000m}
+CNI=${CNI:-calico}
+MINIKUBE_ADDONS=(ambassador ingress-dns)
+ADDITIONAL_NAMESPACES+=(storage test1 test2 test3 test4)
+
+ADD_HELM_REPOS=("btp-unstable,https://btp-charts-unstable.s3.amazonaws.com/charts/")
+ADD_HELM_REPOS+=("btp-stable,https://btp-charts-stable.s3.amazonaws.com/charts/")
+ADD_HELM_REPOS+=("openebs,https://openebs.github.io/charts/")
+
+COMMAND=${1:-help}
+
+function check_commands {
+  if ! _minikube=$(command -v minikube); then
+    echo "Command[minikube] is not installed!"
+    echo "See here for necessary tools installation https://kubernetes.io/docs/tasks/tools/"
+    exit 1
+  fi
+
+  if ! _kubectl=$(command -v kubectl); then
+    echo "Command[kubectl] is not installed!"
+    echo "See here for necessary tools installation https://kubernetes.io/docs/tasks/tools/"
+    exit 1
+  fi
+
+  if ! _helm=$(command -v helm); then
+    echo "Command[helm] is not installed!"
+    echo "See here for necessary tools installation https://helm.sh/docs/intro/install/"
+    exit 1
+  fi
+
+  if ! _jq=$(command -v jq); then
+    echo "Command[jq] is not installed!"
+    echo "See here for necessary tools installation https://stedolan.github.io/jq/download/"
+    exit 1
+  fi
+
+  if ! _daemonize=$(command -v daemonize); then
+    echo "Command[daemonize] is not installed!"
+    echo "See here for necessary tools installation http://software.clapper.org/daemonize/#getting-daemonize"
+    exit 1
+  fi
+}
+
+function start_or_create_minikube {
+  if status=$($_minikube profile list -o json |
+    $_jq -r '.valid[] | select(.Name == "minikube") | .Status'); then
+    if [ "$status" != "Running" ]; then
+      $_minikube start \
+        --addons "${MINIKUBE_ADDONS[@]}" \
+        --kubernetes-version "$KUBERNETES_VERSION" \
+        --driver="$MINIKUBE_DRIVER" \
+        --force-systemd=true \
+        "--nodes=$NODES" \
+        "--memory=$NODE_MEMORY"
+    fi
+  else
+    $_minikube \
+      --addons "${MINIKUBE_ADDONS[@]}" \
+      --kubernetes-version "$KUBERNETES_VERSION" \
+      --driver="$MINIKUBE_DRIVER" \
+      --force-systemd=true \
+      "--nodes=$NODES" \
+      "--memory=$NODE_MEMORY"
+  fi
+}
+
+function add_namespaces {
+  for ns in "${ADDITIONAL_NAMESPACES[@]}"; do
+    $_kubectl create ns "$ns" 2>/dev/null || true
+    $_kubectl create secret generic regcred \
+      -n "$ns" \
+      "--from-file=.dockerconfigjson=$HOME/.docker/config.json" \
+      --type=kubernetes.io/dockerconfigjson 2>/dev/null || true
+  done
+}
+
+function add_helm_repos {
+  for repo in "${ADD_HELM_REPOS[@]}"; do
+    repo_name=$(echo "$repo" | awk -F, '{print $1}')
+    repo_url=$(echo "$repo" | awk -F, '{print $2}')
+    $_helm repo add "$repo_name" "$repo_url"
+  done
+  $_helm repo update
+}
+
+function add_storage_provider {
+  $_helm upgrade --install -n storage \
+    openebs openebs/openebs --set ndm.enabled=false \
+    --set legacy.enabled=false \
+    --set ndmOperator.enabled=false
+}
+
+function stop_tunnel {
+  RUN_DIR=/var/run/user/$(id -u)/minikube
+  mkdir -p "$RUN_DIR"
+  if [ -r "$RUN_DIR/tunnel.pid" ]; then
+    echo Tunnel is already running, therefore stopping
+    kill "$(cat "$RUN_DIR/tunnel.pid")" 2>/dev/null
+    rm -f "$RUN_DIR/tunnel.lock"
+    sleep 15
+  fi
+}
+
+function start_tunnel {
+  $_daemonize -v -l "$RUN_DIR/tunnel.lock" -a -e "$RUN_DIR/tunnel.err" \
+    -o "$RUN_DIR/tunnel.out" -p "$RUN_DIR/tunnel.pid" "$_minikube" tunnel
+  echo "Tunnel outputs may be found in $RUN_DIR/tunnel.out and $RUN_DIR/tunnel.err"
+  sleep 10
+
+  $_kubectl get service ambassador -n ambassador -o json |
+    $_jq -r '.status.loadBalancer.ingress[].ip' | while IFS= read -r ip; do
+    echo "Use http://$ip or https://$ip to access the cluster via ingress"
+  done
+}
+
+function minikube_stop {
+  $_minikube stop
+}
+
+function minikube_delete {
+  $_minikube delete
+}
+
+function create {
+  check_commands
+  start_or_create_minikube
+  add_namespaces
+  add_helm_repos
+  add_storage_provider
+  stop_tunnel && start_tunnel
+}
+
+function delete {
+  check_commands
+  stop_tunnel
+  minikube_delete
+}
+
+function stop {
+  check_commands
+  stop_tunnel
+  minikube_stop
+}
+
+CMD=$(basename "$0")
+function help {
+  echo "$CMD create"
+  echo "      create the minikube cluster"
+  echo "$CMD stop"
+  echo "      stop the minikube cluster"
+  echo "$CMD delete"
+  echo "      delete the minikube cluster"
+  echo
+  echo In order to tune the environment use the following environment vars
+  echo which are listed with their current values
+  echo
+  echo "KUBERNETES_VERSION=${KUBERNETES_VERSION:-stable}"
+  echo "   The Kubernetes version to use"
+  echo "MINIKUBE_DRIVER=${DOCKER:-docker}"
+  echo "   The Minikube driver to use"
+  echo "NODES=${NODES:-4}"
+  echo "   The number of nodes to start"
+  echo "NODE_MEMORY=${NODE_MEMORY:-8000m}"
+  echo "   The amount of memory to allocate per node (N/A for docker driver)"
+  echo "CNI=${CNI:-calico}"
+  echo "   The CNI to use"
+  echo "MINIKUBE_ADDONS=(${MINIKUBE_ADDONS[*]})"
+  echo "   The list of minikube addons to enable"
+  echo "ADDITIONAL_NAMESPACES=(${ADDITIONAL_NAMESPACES[*]})"
+  echo "   THe list of namespaces to create and load up with your docker credentials"
+  echo
+  echo
+}
+
+function create_local_storageclass {
+  cat <<EOF | kubectl apply -f -
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+EOF
+}
+$COMMAND
