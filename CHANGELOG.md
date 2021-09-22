@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* feat(bash): add minikube-test-environment script [view commit](https://github.com/catenasys/shell-scripts/commit/f546287845592f94f17c73ffbda20fc1013bb88f)
 * fix: simplifications to git-check [view commit](https://github.com/catenasys/shell-scripts/commit/d69be95a266b1b15621711782360adb0df74761e)
 
 ## v0.1.5
