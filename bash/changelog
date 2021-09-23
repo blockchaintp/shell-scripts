@@ -22,6 +22,10 @@ source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
 
 options::standard
 options::add -o l -d "add hyperlinks to commits" -x ADD_LINKS
+options::add -o f -d "from date" -a -e FROM_DATE
+options::add -o t -d "to date" -a -e TO_DATE
+options::add -o d -d "show commit date" -x SHOW_DATE
+
 options::parse_available "$@"
 
 export GIT_PAGER=cat
@@ -38,13 +42,37 @@ function ::fromto() {
     return
   fi
   if [ "$ADD_LINKS" = "true" ] && [ -n "$base_url" ]; then
-    git::cmd log "$from"..."$to" --no-merges \
-      --pretty=format:"* %s [view commit]($base_url/%H)"
+    if [ "$SHOW_DATE" != "true" ]; then
+      git::cmd log "$from"..."$to" --no-merges \
+        --pretty=format:"* %s [view commit]($base_url/%H)"
+    else
+      git::cmd log "$from"..."$to" --no-merges \
+        --pretty=format:"* %ci - %s [view commit]($base_url/%H)"
+    fi
   else
-    git::cmd log "$from"..."$to" --no-merges --pretty=format:"* %s"
+    if [ "$SHOW_DATE" != "true" ]; then
+      git::cmd log "$from"..."$to" --no-merges --pretty=format:"* %s"
+    else
+      git::cmd log "$from"..."$to" --no-merges --pretty=format:"* %ci - %s"
+    fi
+
   fi
   echo
   echo
+}
+
+function ::current_branch() {
+  git::cmd rev-parse --abbrev-ref HEAD
+}
+
+function ::date_to_commit_before() {
+  local theDate=${1:?}
+  git::cmd rev-list -n 1 --first-parent --before="$theDate" "$(::current_branch)"
+}
+
+function ::date_to_commit_after() {
+  local theDate=${1:?}
+  git::cmd rev-list -n 1 --first-parent --before="$theDate" "$(::current_branch)"
 }
 
 function ::full() {
@@ -82,4 +110,21 @@ function ::full() {
   done
 }
 
-::full
+if [ -n "$TO_DATE" ]; then
+  to_commit=$(::date_to_commit_before "$TO_DATE")
+fi
+
+if [ -n "$FROM_DATE" ]; then
+  from_commit=$(::date_to_commit_after "$FROM_DATE")
+fi
+
+if [ -n "$FROM_DATE" ] || [ -n "$TO_DATE" ]; then
+  if [ -z "$to_commit" ]; then
+    echo "No change history in the requested range"
+    exit 0
+  else
+    ::fromto "$from_commit" "$to_commit"
+  fi
+else
+  ::full
+fi
