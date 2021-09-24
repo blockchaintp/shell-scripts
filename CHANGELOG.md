@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* feat(changelog): add ability to extract ranges by date [view commit](https://github.com/catenasys/shell-scripts/commit/f8b08dcab3cbb83057ac408fb65da6c90bcf6149)
 * feat(bash): add minikube-test-environment script [view commit](https://github.com/catenasys/shell-scripts/commit/f546287845592f94f17c73ffbda20fc1013bb88f)
 * fix: simplifications to git-check [view commit](https://github.com/catenasys/shell-scripts/commit/d69be95a266b1b15621711782360adb0df74761e)
 
