@@ -29,8 +29,6 @@ options::add -o t -d "target directory to examine and update" -a -m \
   -e TARGET_DIR
 options::add -o p -d "Patch tag" \
   -x PATCH_TAG
-options::add -o n -d "Don't annotate tag" \
-  -x DONT_ANNOTATE_TAG
 options::add -o b -d "proceed to bump minor version if breaking changes are found" \
   -x ALLOW_BREAKING
 options::add -o c -d "generate and commit change before tagging" \
@@ -40,11 +38,23 @@ options::parse "$@"
 pushd "$TARGET_DIR" >/dev/null || exit 1
 
 LATEST_TAG=$(git::cmd describe --tags --match 'v*' --abbrev=0) || exit 1
+DONT_ANNOTATE_TAG=false
+if ! LATEST_ANNOTATED_TAG=$(git::cmd describe --match 'v*' --abbrev=0 2>/dev/null); then
+  log::notice "No prior tag was annotated"
+  DONT_ANNOTATE_TAG=true
+else
+  if [ "$LATEST_TAG" != "$LATEST_ANNOTATED_TAG" ] || [ -z "$LATEST_ANNOTATED_TAG" ]; then
+    DONT_ANNOTATE_TAG=true
+  else
+    DONT_ANNOTATE_TAG=false
+  fi
+fi
+
 LATEST_VERSION=$(echo "$LATEST_TAG" | cut -c2-)
 BREAKING_CHANGES=$(git::cmd log "$LATEST_TAG"..HEAD | grep -c "BREAKING CHANGE")
 CHANGES=$(git::cmd log "$LATEST_TAG"..HEAD | grep -c "^commit")
 
-log::notice "$LATEST_VERSION $CHANGES changes  $BREAKING_CHANGES breaks"
+log::notice "Since $LATEST_VERSION $CHANGES changes  $BREAKING_CHANGES breaks"
 
 skip="true"
 if [ "$BREAKING_CHANGES" -gt 0 ]; then
@@ -56,9 +66,18 @@ if [ "$BREAKING_CHANGES" -gt 0 ]; then
     exit 1
   fi
 elif [ "$CHANGES" -gt 0 ]; then
-  TAG=$("$(dirs::of)/semver" bump patch "$LATEST_VERSION")
+  # if we can't annotate tag then we must do a prerel bump
+  if [ "${DONT_ANNOTATE_TAG}" = "true" ]; then
+    PREREL=$("$(dirs::of)/semver" get prerel "$LATEST_VERSION")
+    ((PREREL++))
+    TAG=$("$(dirs::of)/semver" bump prerel "$PREREL" "$LATEST_VERSION")
+    TAG=${TAG/"-$PREREL"/"p$PREREL"}
+  else
+    TAG=$("$(dirs::of)/semver" bump patch "$LATEST_VERSION")
+  fi
   skip="false"
 else
+  log::notice "No changes since $LATEST_VERSION"
   TAG="$LATEST_VERSION"
   skip="true"
 fi
@@ -68,12 +87,17 @@ TAG="v${TAG}"
 if [ "$skip" = "false" ]; then
   log::notice "Will tag as $TAG"
   if [ "$DONT_ANNOTATE_TAG" = "true" ]; then
+    log::notice "No changelog updates for prerel builds"
     git::cmd tag "$TAG"
   else
     if [ "$GENERATE_CHANGELOG" = "true" ]; then
-      "$(dirs::of)"/changelog -l | sed -e "s/Unreleased/$TAG/" >CHANGELOG.md
-      git add CHANGELOG.md
-      git commit --no-verify -m "ci: Update CHANGELOG releasing $TAG" CHANGELOG.md
+      if [ -r "CHANGELOG.md" ]; then
+        "$(dirs::of)"/changelog -l | sed -e "s/Unreleased/$TAG/" >CHANGELOG.md
+        git add CHANGELOG.md
+        git commit --no-verify -m "ci: Update CHANGELOG releasing $TAG" CHANGELOG.md
+      else
+        log::notice "No prior changelog found. Will not generate a new one."
+      fi
     fi
     git::cmd tag -a -s "$TAG" -m "Auto Tagging $TAG"
   fi
