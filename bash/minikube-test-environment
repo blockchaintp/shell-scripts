@@ -6,7 +6,11 @@ NODES=${NODES:-4}
 NODE_MEMORY=${NODE_MEMORY:-8000m}
 CNI=${CNI:-calico}
 MINIKUBE_ADDONS=(ambassador ingress-dns)
-ADDITIONAL_NAMESPACES+=(storage test1 test2 test3 test4)
+if [ -n "$ADDITIONAL_NAMESPACES" ]; then
+  ADDITIONAL_NAMESPACES="$ADDITIONAL_NAMESPACES,storage"
+else
+  ADDITIONAL_NAMESPACES="storage"
+fi
 
 ADD_HELM_REPOS=("btp-unstable,https://btp-charts-unstable.s3.amazonaws.com/charts/")
 ADD_HELM_REPOS+=("btp-stable,https://btp-charts-stable.s3.amazonaws.com/charts/")
@@ -70,7 +74,8 @@ function start_or_create_minikube {
 }
 
 function add_namespaces {
-  for ns in "${ADDITIONAL_NAMESPACES[@]}"; do
+  # shellcheck disable=SC2001
+  for ns in $(echo "${ADDITIONAL_NAMESPACES[@]}" | sed -e 's/,/ /'); do
     $_kubectl create ns "$ns" 2>/dev/null || true
     $_kubectl create secret generic regcred \
       -n "$ns" \
