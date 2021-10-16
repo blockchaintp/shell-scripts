@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+
+* fix: change ADDITIONAL_NAMESPACES to string [view commit](https://github.com/catenasys/shell-scripts/commit/d18262340e03ed53635149ce613f4caa65f77f74)
+
 ## v0.1.7
 
 * fix(bash): enhance update-repo-tags to detect annotated tags [view commit](https://github.com/catenasys/shell-scripts/commit/8ed4e340d5a1f8f3d0753eddfe05028da5a626b3)
