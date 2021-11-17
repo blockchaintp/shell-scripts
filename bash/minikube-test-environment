@@ -62,7 +62,8 @@ function start_or_create_minikube {
         --force-systemd=true \
         "--nodes=$NODES" \
         "--memory=$NODE_MEMORY" \
-        --apiserver-names=host.docker.internal,localhost
+        --apiserver-names=host.docker.internal,localhost \
+        --ports=8443:8443
     fi
   else
     $_minikube \
