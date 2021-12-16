@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* fix(git-check): fetch before pull [view commit](https://github.com/catenasys/shell-scripts/commit/4d301e45e98bbf205fb00be9f0daae357c80027c)
 * fix: change ADDITIONAL_NAMESPACES to string [view commit](https://github.com/catenasys/shell-scripts/commit/d18262340e03ed53635149ce613f4caa65f77f74)
 
 ## v0.1.7
