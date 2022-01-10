@@ -109,6 +109,7 @@ function create_package {
   if [ "${ALL_NAMESPACES}" = "true" ]; then
     file="$cluster.ALL-${now}.tar.gz"
   fi
+  file=${file/\//_}
   log::notice "Creating package $file"
   find "${OUT_DIR}" -type f -print0 | sed -e "s@$OUT_DIR/@@g" |
     xargs -0 tar cfz "$file" -C "${OUT_DIR}"
