@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+
+* fix(bash): handle when cluster names contain '/' [view commit](https://github.com/catenasys/shell-scripts/commit/c3bf27b5cd6ccfb54ca26e74400a6a7910b1410d)
+
 ## v0.1.8
 
 * fix(git-check): fetch before pull [view commit](https://github.com/catenasys/shell-scripts/commit/4d301e45e98bbf205fb00be9f0daae357c80027c)
