@@ -64,6 +64,13 @@ function get_branch_name {
   echo "$branch_name"
 }
 
+function fetch_if_possible {
+  local base_name
+  base_name=${1:?}
+  log::debug "Fetching $base_name"
+  exec::hide git::cmd fetch --all
+}
+
 function pull_if_different {
   local base_name
   base_name=${1:?}
@@ -140,6 +147,7 @@ for repo in $(find "${base_path}${EXTRA}" -mindepth "${DEPTH}" -maxdepth "${DEPT
   max_repo_len=$((len > max_repo_len ? len : max_repo_len))
   max_branch_len=$((branch_len > max_branch_len ? branch_len : max_branch_len))
   status=$(git::cmd status --short | wc -l)
+  fetch_if_possible "$base_name"
   if [ "$status" = "0" ]; then
     pull_if_different "$base_name" "$branch_name"
   else
