@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* fix(git-check): always fetch origin if possible [view commit](https://github.com/catenasys/shell-scripts/commit/c8649acc9d21cc15fccadec893f43927e42d7e35)
 * fix(bash): handle when cluster names contain '/' [view commit](https://github.com/catenasys/shell-scripts/commit/c3bf27b5cd6ccfb54ca26e74400a6a7910b1410d)
 
 ## v0.1.8
