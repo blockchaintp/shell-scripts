@@ -1,0 +1,227 @@
+#!/usr/bin/env bash
+
+# Example kind config for a 4 node cluster:
+## kind: Cluster
+## name: test
+## apiVersion: kind.x-k8s.io/v1alpha4
+## networking:
+##   apiServerAddress: 0.0.0.0
+##   apiServerPort: 6443
+## nodes:
+## - role: control-plane
+##   kubeadmConfigPatches:
+##   - |
+##     kind: InitConfiguration
+##     nodeRegistration:
+##       kubeletExtraArgs:
+##         node-labels: "ingress-ready=true"
+##   extraPortMappings:
+##     - containerPort: 80
+##       hostPort: 80
+##       listenAddress: "0.0.0.0"
+##     - containerPort: 443
+##       hostPort: 443
+##       listenAddress: "0.0.0.0"
+## - role: worker
+## - role: worker
+## - role: worker
+## - role: worker
+
+# shellcheck source=includer.sh
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
+
+@include exec
+@include log
+@include options
+@include git
+
+ADDITIONAL_NAMESPACES="storage"
+function ::add_ns {
+  local ns=${1:?}
+  ADDITIONAL_NAMESPACES="$ADDITIONAL_NAMESPACES,$ns"
+}
+
+ADD_HELM_REPOS+=("openebs,https://openebs.github.io/charts/")
+ADD_HELM_REPOS+=("bitnami,https://charts.bitnami.com/bitnami")
+
+log::level 2
+options::standard
+options::description "This script creates a kind cluster suitable for testing"
+options::add -o n -d "the name of the kind cluster to create" -a -e CLUSTER_NAME
+options::add -o f -d "kind config file" -a -m -e KIND_CONFIG
+options::add -o c -d "command: create, delete" -a -m -e COMMAND
+options::add -o t -d "namespaces to add" -a -f ::add_ns
+options::add -o d -d "address of a remote docker daemon" -a -e DOCKER_HOST
+options::add -o D -d "Use DinD(Docker in Docker)" -x USE_DIND
+options::add -o P -d "Use the specified port fo::add_ingress_providerr the DinD daemon" -a -e DIND_PORT
+options::parse "$@"
+
+CLUSTER_NAME=${CLUSTER_NAME:-test}
+COMMAND=${COMMAND:-create}
+DOCKER_PORT=${DIND_PORT:-2375}
+
+if [ -r "$HOME/.asdf/asdf.sh" ]; then
+  source "$HOME/.asdf/asdf.sh"
+fi
+
+function ::is_dind_running {
+  local container_name=${1:?}
+  local is_running
+  is_running=$(docker inspect --format "{{.State.Running}}" "$container_name" 2>/dev/null)
+  [ "$is_running" = "true" ]
+}
+
+function ::use_dind {
+  local name="$CLUSTER_NAME-dind"
+  if [ "$USE_DIND" = "true" ]; then
+    if ::is_dind_running "$name"; then
+      log::info "Using pre-existing DinD container $name"
+      export DOCKER_HOST=tcp://localhost:2375
+    else
+      log::info "Starting DinD container $name"
+      export DOCKER_PORT=2375
+      docker run -d --name "$name" --privileged -p $DOCKER_PORT:2375 -p 6443:6443 -p 8080:80 -p 8443:443 \
+        -e DOCKER_TLS_CERTDIR="" \
+        docker:dind --tls=false >/dev/null
+      export DOCKER_HOST=tcp://localhost:$DOCKER_PORT
+      sleep 30
+    fi
+  fi
+}
+
+function ::delete_dind {
+  local name="$CLUSTER_NAME-dind"
+  if [ "$USE_DIND" = "true" ]; then
+    docker rm -f "$name"
+  fi
+}
+
+function ::check_cmd {
+  local cmd=${1:?}
+  if ! command -v "${cmd}" >/dev/null 2>&1; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+function ::ensure_asdf {
+  if ::check_cmd asdf; then
+    log::info "ASDF is already installed here"
+    return 0
+  else
+    if ! ::check_cmd git; then
+      log::error "Command[git] is not installed!"
+      log::error "See here for necessary tools installation https://git-scm.com/book/en/v2/Getting-Started-Installing-Git"
+      exit 1
+    fi
+    if ! ::check_cmd curl; then
+      log::error "Command[curl] is not installed!"
+      log::error "See here for necessary tools installation https://curl.haxx.se/docs/install.html"
+      exit 1
+    fi
+    if git::cmd clone https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.9.0; then
+      source "$HOME/.asdf/asdf.sh"
+      return 0
+    else
+      return 1
+    fi
+  fi
+}
+
+function ::asdf {
+  local plugin=${1:?}
+  local version=${2:-latest}
+  _asdf=$(command -v asdf)
+  if _where=$($_asdf which "$plugin"); then
+    log::info "Using $_where"
+    return 0
+  fi
+  $_asdf plugin add "$plugin"
+  ret=$?
+  if [ $ret -ne 0 ] && [ $ret -ne 2 ]; then
+    log::error "Failed to add plugin $plugin"
+    exit 1
+  fi
+  $_asdf install "$plugin" "$version"
+  $_asdf local "$plugin" "$version"
+  return $?
+}
+
+function kind::preflight {
+  ::ensure_asdf
+  ::asdf kind
+  ::asdf kubectl
+  ::check_cmd docker || error::exit "Command[docker] is not installed!"
+}
+
+function kind::create {
+  local _config=${1:?}
+  local _name=${2:?}
+  if [ -r "$_config" ]; then
+    log::info "Using kind config file $_config"
+    kind create cluster --name "$_name" --config "$_config"
+  else
+    log::warn "Cannot find kind config file $_config"
+    return 1
+  fi
+}
+
+function kind::delete {
+  local _name=${1:?}
+  kind delete cluster --name "$_name"
+}
+
+function ::add_namespaces {
+  # shellcheck disable=SC2001
+  for ns in $(echo "${ADDITIONAL_NAMESPACES}" | sed -e 's/,/ /g'); do
+    log::info "Adding namespace $ns"
+    kubectl create ns "$ns" 2>/dev/null
+    kubectl create secret generic regcred \
+      -n "$ns" \
+      "--from-file=.dockerconfigjson=$HOME/.docker/config.json" \
+      --type=kubernetes.io/dockerconfigjson 2>/dev/null || true
+  done
+}
+
+function ::add_helm_repos {
+  for repo in "${ADD_HELM_REPOS[@]}"; do
+    repo_name=$(echo "$repo" | awk -F, '{print $1}')
+    repo_url=$(echo "$repo" | awk -F, '{print $2}')
+    helm repo add "$repo_name" "$repo_url"
+  done
+  helm repo update
+}
+
+function ::add_storage_provider {
+  helm upgrade --install -n storage \
+    openebs openebs/openebs --set ndm.enabled=false \
+    --set legacy.enabled=false \
+    --set ndmOperator.enabled=false
+}
+
+function ::add_ingress_provider {
+  kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+}
+
+function create {
+  #  set -e
+  kind::preflight
+  ::use_dind
+  kind::create "$KIND_CONFIG" "$CLUSTER_NAME"
+  ::add_namespaces
+  ::add_helm_repos
+  ::add_storage_provider
+  ::add_ingress_provider
+  #  set +e
+}
+
+function delete {
+  # set -e
+  kind::preflight
+  kind::delete "$CLUSTER_NAME"
+  ::delete_dind
+  # set +e
+}
+
+"$COMMAND"
