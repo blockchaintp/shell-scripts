@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased
+
+* feat(kind-test-environment): update to use nginx-ingress [view commit](https://github.com/catenasys/shell-scripts/commit/11607f190b03f22b8d718eb8d4a0a447c35f1eea)
+* feat(bash): add script to create a kind based test cluster [view commit](https://github.com/catenasys/shell-scripts/commit/8528ef45f7f1128cc0cbf46682287d3e58760f84)
+
 ## v0.1.9
 
 * fix(git-check): always fetch origin if possible [view commit](https://github.com/catenasys/shell-scripts/commit/c8649acc9d21cc15fccadec893f43927e42d7e35)
