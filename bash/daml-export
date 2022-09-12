@@ -33,6 +33,7 @@ options::add -o t -d "daml token" -a -e DAML_TOKEN
 options::parse "$@"
 shift $((OPTIND - 1))
 
+set -x
 START_OFFSET=${START_OFFSET:-0}
 STEPPING=${STEPPING:-5000}
 MAX_PARALLEL=${MAX_PARALLEL:-5}
@@ -76,14 +77,14 @@ function exportRange {
         -jar "$HOME/.daml/sdk/${DAML_VERSION}/daml-sdk/daml-sdk.jar" \
         export script --all-parties --sdk-version "${EXPORT_SDK}" \
         --acs-batch-size 1 \
-        -o "$dir" --host localhost --port 9000 \
+        -o "$dir" --host "$DAML_HOST" --port 9000 \
         --start "$start$_extra" --end "$stop$_extra"
     else
       java -Xmx32000m \
         -jar "$HOME/.daml/sdk/${DAML_VERSION}/daml-sdk/daml-sdk.jar" \
         export script --all-parties --sdk-version "${EXPORT_SDK}" \
         --acs-batch-size 1 \
-        -o "$dir" --host localhost --port 9000 \
+        -o "$dir" --host "$DAML_HOST" --port 9000 \
         --start "$start$_extra" --end "$stop$_extra" \
         --access-token-file "$DAML_TOKEN"
     fi
