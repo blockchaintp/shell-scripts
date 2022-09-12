@@ -39,7 +39,7 @@ STEPPING=${STEPPING:-5000}
 MAX_PARALLEL=${MAX_PARALLEL:-5}
 
 DAML_HOST=${DAML_HOST:-localhost}
-DAML_PORT=${DAML_PORT:-9000}
+DAML_PORT=${DAML_PORT:-39000}
 DAML_TOKEN=${DAML_TOKEN:-""}
 DAML_VERSION=${DAML_VERSION:-2.3.2}
 EXPORT_SDK=${EXPORT_SDK:-1.13.1}
@@ -77,14 +77,14 @@ function exportRange {
         -jar "$HOME/.daml/sdk/${DAML_VERSION}/daml-sdk/daml-sdk.jar" \
         export script --all-parties --sdk-version "${EXPORT_SDK}" \
         --acs-batch-size 1 \
-        -o "$dir" --host "$DAML_HOST" --port 9000 \
+        -o "$dir" --host "$DAML_HOST" --port "$DAML_PORT" \
         --start "$start$_extra" --end "$stop$_extra"
     else
       java -Xmx32000m \
         -jar "$HOME/.daml/sdk/${DAML_VERSION}/daml-sdk/daml-sdk.jar" \
         export script --all-parties --sdk-version "${EXPORT_SDK}" \
         --acs-batch-size 1 \
-        -o "$dir" --host "$DAML_HOST" --port 9000 \
+        -o "$dir" --host "$DAML_HOST" --port "$DAML_PORT" \
         --start "$start$_extra" --end "$stop$_extra" \
         --access-token-file "$DAML_TOKEN"
     fi
