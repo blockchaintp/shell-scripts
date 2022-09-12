@@ -71,16 +71,16 @@ function exportRange {
     rm -rf "$dir"
     mkdir -p "$dir"
     if [ -z "$DAML_TOKEN" ]; then
-      #-Dlogback.configurationFile=/home/user/.daml/sdk/${DAML_VERSION}/daml-sdk/export-logback.xml \
+      #-Dlogback.configurationFile=$HOME/.daml/sdk/${DAML_VERSION}/daml-sdk/export-logback.xml \
       java -Xmx32000m \
-        -jar "/home/user/.daml/sdk/${DAML_VERSION}/daml-sdk/daml-sdk.jar" \
+        -jar "$HOME/.daml/sdk/${DAML_VERSION}/daml-sdk/daml-sdk.jar" \
         export script --all-parties --sdk-version "${EXPORT_SDK}" \
         --acs-batch-size 1 \
         -o "$dir" --host localhost --port 9000 \
         --start "$start$_extra" --end "$stop$_extra"
     else
       java -Xmx32000m \
-        -jar "/home/user/.daml/sdk/${DAML_VERSION}/daml-sdk/daml-sdk.jar" \
+        -jar "$HOME/.daml/sdk/${DAML_VERSION}/daml-sdk/daml-sdk.jar" \
         export script --all-parties --sdk-version "${EXPORT_SDK}" \
         --acs-batch-size 1 \
         -o "$dir" --host localhost --port 9000 \
