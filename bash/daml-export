@@ -29,6 +29,7 @@ options::add -o s -d "number of offsets to cover in each export" -a -e STEPPING
 options::add -o h -d "daml host" -a -e DAML_HOST
 options::add -o p -d "daml port" -a -e DAML_PORT
 options::add -o t -d "daml token" -a -e DAML_TOKEN
+options::add -o z -d "acs batch size" -a -e ACS_BATCH_SIZE
 
 options::parse "$@"
 shift $((OPTIND - 1))
@@ -37,6 +38,7 @@ set -x
 START_OFFSET=${START_OFFSET:-0}
 STEPPING=${STEPPING:-5000}
 MAX_PARALLEL=${MAX_PARALLEL:-5}
+ACS_BATCH_SIZE=${ACS_BATCH_SIZE:-1}
 
 DAML_HOST=${DAML_HOST:-localhost}
 DAML_PORT=${DAML_PORT:-39000}
@@ -76,14 +78,14 @@ function exportRange {
       java -Xmx32000m \
         -jar "$HOME/.daml/sdk/${DAML_VERSION}/daml-sdk/daml-sdk.jar" \
         export script --all-parties --sdk-version "${EXPORT_SDK}" \
-        --acs-batch-size 1 \
+        --acs-batch-size "${ACS_BATCH_SIZE}" \
         -o "$dir" --host "$DAML_HOST" --port "$DAML_PORT" \
         --start "$start$_extra" --end "$stop$_extra"
     else
       java -Xmx32000m \
         -jar "$HOME/.daml/sdk/${DAML_VERSION}/daml-sdk/daml-sdk.jar" \
         export script --all-parties --sdk-version "${EXPORT_SDK}" \
-        --acs-batch-size 1 \
+        --acs-batch-size "${ACS_BATCH_SIZE}" \
         -o "$dir" --host "$DAML_HOST" --port "$DAML_PORT" \
         --start "$start$_extra" --end "$stop$_extra" \
         --access-token-file "$DAML_TOKEN"
