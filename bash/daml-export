@@ -1,0 +1,240 @@
+#!/usr/bin/env bash
+# Copyright 2021 Blockchain Technology Partners
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http:#www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ------------------------------------------------------------------------------
+
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
+
+@include log
+@include options
+
+options::standard
+options::set_description "Exports a daml system and compiles the resulting scripts"
+options::add -o d -d "target directory" -a -m -e TARGET_DIR
+options::add -o e -d "Stop offset(exclusive) in hex" -a -m -e STOP_OFFSET
+options::add -o P -d "maximum number of compiles to run in parallel" -a -e MAX_PARALLEL
+options::add -o b -d "Start offset in hex" -a -e START_OFFSET
+options::add -o s -d "number of offsets to cover in each export" -a -e STEPPING
+options::add -o h -d "daml host" -a -e DAML_HOST
+options::add -o p -d "daml port" -a -e DAML_PORT
+options::add -o t -d "daml token" -a -e DAML_TOKEN
+options::add -o z -d "acs batch size" -a -e ACS_BATCH_SIZE
+
+options::parse "$@"
+shift $((OPTIND - 1))
+
+set -x
+START_OFFSET=${START_OFFSET:-0}
+STEPPING=${STEPPING:-5000}
+MAX_PARALLEL=${MAX_PARALLEL:-5}
+ACS_BATCH_SIZE=${ACS_BATCH_SIZE:-1}
+
+DAML_HOST=${DAML_HOST:-localhost}
+DAML_PORT=${DAML_PORT:-39000}
+DAML_TOKEN=${DAML_TOKEN:-""}
+DAML_VERSION=${DAML_VERSION:-2.3.2}
+EXPORT_SDK=${EXPORT_SDK:-1.13.1}
+
+# STOP_OFFSET=000000000005ddd1
+_extra="0000000000000000"
+
+function hex_to_dec {
+  local val=$1
+  echo $((16#$val))
+}
+
+function dec_to_hex {
+  local val=$1
+  printf "%016x" "$val"
+}
+
+function exportRange {
+  local start=${1:?}
+  local stop=${2:?}
+  local dir=${3:?}
+  local base_dir=${4:?}
+  local start_int
+  local stop_int
+  if [ ! -r "$dir/export.good" ]; then
+    start_int=$(hex_to_dec "$start")
+    stop_int=$(hex_to_dec "$stop")
+    echo "Exporting from offset $start to $stop ( $start_int - $stop_int )"
+    rm -rf "$base_dir*"
+    rm -rf "$dir"
+    mkdir -p "$dir"
+    if [ -z "$DAML_TOKEN" ]; then
+      #-Dlogback.configurationFile=$HOME/.daml/sdk/${DAML_VERSION}/daml-sdk/export-logback.xml \
+      java -Xmx32000m \
+        -jar "$HOME/.daml/sdk/${DAML_VERSION}/daml-sdk/daml-sdk.jar" \
+        export script --all-parties --sdk-version "${EXPORT_SDK}" \
+        --acs-batch-size "${ACS_BATCH_SIZE}" \
+        -o "$dir" --host "$DAML_HOST" --port "$DAML_PORT" \
+        --start "$start$_extra" --end "$stop$_extra"
+    else
+      java -Xmx32000m \
+        -jar "$HOME/.daml/sdk/${DAML_VERSION}/daml-sdk/daml-sdk.jar" \
+        export script --all-parties --sdk-version "${EXPORT_SDK}" \
+        --acs-batch-size "${ACS_BATCH_SIZE}" \
+        -o "$dir" --host "$DAML_HOST" --port "$DAML_PORT" \
+        --start "$start$_extra" --end "$stop$_extra" \
+        --access-token-file "$DAML_TOKEN"
+    fi
+    export_exit=$?
+    if [ $export_exit -eq 0 ]; then
+      touch "$dir/export.good"
+    else
+      echo "REDO $dir"
+    fi
+    sleep 1
+  else
+    echo "Skipping complete export from $start to $stop"
+  fi
+
+}
+
+function verifyExport {
+  local dir=${1:?}
+  if [ -r "$dir/export.good" ]; then
+    if [ ! -r "$dir/Export.daml" ]; then
+      rm -f "$dir/export.good"
+      return 2
+    else
+      if [ -r "$dir/.daml/dist/export-1.0.0.dar" ]; then
+        return 0
+      else
+        return 1
+      fi
+    fi
+  else
+    return 2
+  fi
+}
+
+function correct_archives {
+  local dir=${1:?}
+  local file_in
+  file_in="$dir/Export.daml"
+  local tmpFile
+  tmpFile=$(mktemp)
+  sed -E -e 's/exerciseCmd ([a-zA-Z0-9_]+) DA.Internal.Template.Archive/archiveCmd \1/' <"$file_in" >"$tmpFile"
+  mv "$tmpFile" "$file_in"
+}
+
+function correct_export {
+  local dir=${1:?}
+  echo "Correct $dir/daml.yaml"
+  sed -e 's/--target=1.14/--target=1.12/' <"$dir/daml.yaml" >"$dir/daml.yaml.new"
+  mv "$dir/daml.yaml.new" "$dir/daml.yaml"
+
+  sed -e 's/import qualified DA.Internal.Template//' <"$dir/Export.daml" >"$dir/Export.daml.new"
+  mv "$dir/Export.daml.new" "$dir/Export.daml"
+
+  correct_archives "$dir"
+}
+
+function build {
+  local dir=${1:?}
+
+  verifyExport "$dir"
+  ret=$?
+  if [ $ret -gt 1 ]; then
+    echo "Skipping $dir since it isn't ready"
+    return
+  elif [ $ret -eq 0 ]; then
+    echo "Skipping $dir since it is already built"
+    return
+  fi
+
+  echo "Building $dir"
+  pushd "$dir" >/dev/null || return 1
+  daml build >"build.log" 2>&1
+  popd >/dev/null || return 1
+}
+
+CUR_INT=$(hex_to_dec "$START_OFFSET")
+STOP_INT=$(hex_to_dec "$STOP_OFFSET")
+
+count=0
+RUNNING_PROCS=()
+TO_BUILD=()
+
+while [ "$CUR_INT" -le "$STOP_INT" ] && [ "$CUR_INT" != "$NEXT_INT" ]; do
+
+  NEXT_INT=$((CUR_INT + "$STEPPING"))
+  if [ $NEXT_INT -gt "$STOP_INT" ]; then
+    NEXT_INT=$STOP_INT
+  fi
+
+  CUR_HEX=$(dec_to_hex "$CUR_INT")
+  NEXT_HEX=$(dec_to_hex "$NEXT_INT")
+
+  OUTPUT_DIR=$(printf "%s/%s-%s" "$TARGET_DIR" "$CUR_HEX" "$NEXT_HEX")
+  BASE_DIR=$(printf "%s/%s-" "$TARGET_DIR" "$CUR_HEX")
+
+  verifyExport "$OUTPUT_DIR"
+  if [ $? -ge 2 ]; then
+    exportRange "$CUR_HEX" "$NEXT_HEX" "$OUTPUT_DIR" "$BASE_DIR"
+  fi
+
+  TO_BUILD+=("$OUTPUT_DIR")
+  CURRENT_PROCS=()
+  for pid in "${RUNNING_PROCS[@]}"; do
+    if ps -p "$pid" >/dev/null; then
+      CURRENT_PROCS+=("$pid")
+    fi
+    RUNNING_PROCS=("${CURRENT_PROCS[@]}")
+  done
+
+  if [ "${#RUNNING_PROCS[@]}" -lt "$MAX_PARALLEL" ]; then
+    this_dir="${TO_BUILD[0]}"
+    TO_BUILD=("${TO_BUILD[@]:1}")
+    correct_export "$this_dir"
+    build "$this_dir" &
+    RUNNING_PROCS+=($!)
+    echo "Daml builds ${RUNNING_PROCS[*]} in the background"
+  fi
+
+  CUR_INT=$NEXT_INT
+  ((count += 1))
+done
+
+find "$TARGET_DIR" -name export.good -print | sort | while read -r buildFile; do
+  OUTPUT_DIR=$(dirname "$buildFile")
+  verifyExport "$OUTPUT_DIR"
+  ret=$?
+  if [ $ret -gt 1 ]; then
+    echo "Skipping $OUTPUT_DIR since it isn't ready"
+    continue
+  elif [ $ret -eq 0 ]; then
+    echo "Skipping $OUTPUT_DIR since it is already built"
+    continue
+  fi
+
+  correct_export "$OUTPUT_DIR"
+
+  while [ "${#RUNNING_PROCS[@]}" -ge "$MAX_PARALLEL" ]; do
+    sleep 10
+    CURRENT_PROCS=()
+    for pid in "${RUNNING_PROCS[@]}"; do
+      if ps -p "$pid" >/dev/null; then
+        CURRENT_PROCS+=("$pid")
+      fi
+      RUNNING_PROCS=("${CURRENT_PROCS[@]}")
+    done
+  done
+
+  build "$OUTPUT_DIR" &
+  RUNNING_PROCS+=($!)
+
+done
