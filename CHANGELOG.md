@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+* fix(daml-export): add -z to set acs-batch-size [view commit](https://github.com/catenasys/shell-scripts/commit/7810afd38a514653c48a4b9c95d235f0e7a554ee)
+* fix(daml-export): use DAML_PORT [view commit](https://github.com/catenasys/shell-scripts/commit/6a3fc9fbc5c238958765baf8ef939effdf34a8d1)
+* fix(daml-export): use DAML_HOST [view commit](https://github.com/catenasys/shell-scripts/commit/d425a3f51bef53347f981041f72f279d734b6f2b)
+* fix(daml-export): typo [view commit](https://github.com/catenasys/shell-scripts/commit/651bdb214f67c3b47dc122bee6ef867f1ef17935)
+* fix(daml-export): /home/user references become HOME [view commit](https://github.com/catenasys/shell-scripts/commit/671d31312f6cc7bb40fb87b9ded9a426d2b1201b)
+* fix(daml-export): add DAML_TOKEN arg parse [view commit](https://github.com/catenasys/shell-scripts/commit/136331e8492d07c07a8f9e68cfcb53a8cefcdb11)
+* feat(bash): add daml-export [view commit](https://github.com/catenasys/shell-scripts/commit/d89241a791def6498efd9c4c58f98b9e764939ed)
 * feat(kind-test-environment): update to use nginx-ingress [view commit](https://github.com/catenasys/shell-scripts/commit/11607f190b03f22b8d718eb8d4a0a447c35f1eea)
 * feat(bash): add script to create a kind based test cluster [view commit](https://github.com/catenasys/shell-scripts/commit/8528ef45f7f1128cc0cbf46682287d3e58760f84)
 
