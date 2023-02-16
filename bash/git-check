@@ -97,7 +97,7 @@ function get_gh_pr_count {
     if [ "$orgname" = "blockchaintp" ] ||
       [ "$orgname" = "catenasys" ] || [ "$orgname" = "scealiontach" ]; then
       log::debug "Checking pull requests for $base_name"
-      gh pr list -R "$base_name" | grep -cv "no open"
+      gh pr list -R "$base_name" --draft=false | grep -cv "no open"
     else
       echo -
     fi
