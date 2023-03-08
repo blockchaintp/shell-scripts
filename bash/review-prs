@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# shellcheck source=includer.sh
+source "$(dirname "${BASH_SOURCE[0]}")/includer.sh"
+
+@include options
+@include commands
+
+_gh=$(commands::use gh)
+
+log::level 2
+function usage() {
+  true
+}
+options::standard
+options::description "Opens a browser to review all pull requests for the specified organizations."
+
+declare -a -g ORGANIZATIONS
+function local::add_organization {
+  local org=$1
+  ORGANIZATIONS+=("$org")
+}
+
+declare -a -g INTERESTED_ORGANIZATIONS
+function local::add_interested_organization {
+  local org=$1
+  INTERESTED_ORGANIZATIONS+=("$org")
+}
+
+options::add -o o -d "organization to fully scan. repeatable." -a -f local::add_organization
+options::add -o i -d "organization to scan only if we have a repo cloned. repeatable." -a -f local::add_interest_organization
+options::add -o g -d "git repositories directory" -a -e GIT_HOME
+options::add -o w -d "open pr list in the browser" -x OPEN_BROWSER
+
+options::parse "$@"
+shift $((OPTIND - 1))
+
+OPEN_BROWSER=${OPEN_BROWSER:-false}
+GIT_HOME=${GIT_HOME:-$HOME/git}
+if [ -z "${INTERESTED_ORGANIZATIONS[*]}" ]; then
+  INTERESTED_ORGANIZATIONS+=(hyperledger)
+fi
+
+if [ -z "${ORGANIZATIONS[*]}" ]; then
+  ORGANIZATIONS+=(391agency btpworks blockchaintp catenasys)
+fi
+
+function review_prs {
+  local repo_fullname=$1
+  if [ "$(gh pr list --draft=false --repo "$repo_fullname" --json reviewDecision | jq -r '.[].reviewDecision' | grep -vc 'APPROVED')" -gt 0 ]; then
+    log::info "Found reviewable prs for $repo_fullname"
+    if [ "$OPEN_BROWSER" = "true" ]; then
+      command gh pr list --repo "$repo_fullname" --web >/dev/null 2>&1
+    else
+      command gh pr list --repo "$repo_fullname"
+    fi
+  else
+    log::debug "No reviewable prs for $repo_fullname"
+  fi
+}
+
+function scan_interest_repos {
+  local org=$1
+  local repo_fullname
+  for repo in $(
+    gh search repos --owner "$org" --archived=false --json name |
+      jq -r '.[].name'
+  ); do
+    repo_fullname="$org/$repo"
+    if [ -d "$GIT_HOME/$repo_fullname" ]; then
+      review_prs "$repo_fullname"
+    fi
+  done
+}
+
+function scan_organization {
+  local org=$1
+  local repo_fullname
+  for repo in $(
+    gh search repos --owner "$org" --archived=false --json name |
+      jq -r '.[].name'
+  ); do
+    repo_fullname="$org/$repo"
+    review_prs "$repo_fullname"
+  done
+}
+
+for org in "${ORGANIZATIONS[@]}"; do
+  scan_organization "$org"
+done
+
+for org in "${INTERESTED_ORGANIZATIONS[@]}"; do
+  scan_interest_repos "$org"
+done
