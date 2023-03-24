@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* feat(bash): add review-prs [view commit](https://github.com/catenasys/shell-scripts/commit/fde4e007ab2a744729b6a751a36699f6b6a6d444)
 * fix(bash): eksctl uses slightly different json syntax now [view commit](https://github.com/catenasys/shell-scripts/commit/22ee1821918983b17eef961f92ca4e5402934f01)
 * fix(daml-export): add -z to set acs-batch-size [view commit](https://github.com/catenasys/shell-scripts/commit/7810afd38a514653c48a4b9c95d235f0e7a554ee)
 * fix(daml-export): use DAML_PORT [view commit](https://github.com/catenasys/shell-scripts/commit/6a3fc9fbc5c238958765baf8ef939effdf34a8d1)
